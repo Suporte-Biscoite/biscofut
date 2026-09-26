@@ -1,4 +1,5 @@
 import Headline from "./Headline";
+import Sticker from "./Sticker";
 import { campaign } from "@/lib/campaign";
 
 /**
@@ -38,7 +39,13 @@ export default function HowItWorks() {
       id="como-participar"
       className="border-t border-line bg-paper py-24 md:py-32"
     >
-      <div className="mx-auto max-w-6xl px-6 md:px-10">
+      <div className="relative mx-auto max-w-6xl px-6 md:px-10">
+        <Sticker
+          src="/images/web/neyney-rosto.png"
+          className="-top-6 right-24 w-36"
+          rotate={-10}
+          delay={1800}
+        />
         <p className="eyebrow">Como participar</p>
         <Headline
           lead="Comprou, cadastrou a nota,"

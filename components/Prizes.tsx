@@ -1,4 +1,5 @@
 import Headline from "./Headline";
+import Sticker from "./Sticker";
 import { campaign } from "@/lib/campaign";
 
 export default function Prizes() {
@@ -6,7 +7,13 @@ export default function Prizes() {
 
   return (
     <section id="premios" className="border-t border-line bg-white py-24 md:py-32">
-      <div className="mx-auto max-w-6xl px-6 md:px-10">
+      <div className="relative mx-auto max-w-6xl px-6 md:px-10">
+        <Sticker
+          src="/images/web/neyney-corpo-inteiro.png"
+          className="-top-16 right-16 w-32"
+          rotate={6}
+          delay={900}
+        />
         <p className="eyebrow">Prêmios</p>
         <Headline
           lead={`São ${itensAutografados.quantidade} chances de levar algo`}

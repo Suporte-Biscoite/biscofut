@@ -11,6 +11,8 @@
  * aproximação tipográfica — substituir por SVG oficial quando existir.
  */
 
+import { tomDoLogo } from "@/lib/theme";
+
 const BISCOITE_SRC = {
   navy: "/images/biscoite-azul.png",
   light: "/images/biscoite-branco.png",
@@ -30,7 +32,7 @@ export default function BrandLockup({
   return (
     <div className={`flex items-center gap-4 ${color} ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={BISCOITE_SRC[tone]} alt="Biscoitê" className="h-[1.65em] w-auto" />
+      <img src={BISCOITE_SRC[tomDoLogo(tone)]}alt="Biscoitê" className="h-[1.65em] w-auto" />
 
       <span className={`h-[1.75em] w-px shrink-0 ${rule}`} aria-hidden="true" />
 

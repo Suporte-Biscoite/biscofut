@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ArenaShowcase from "@/components/ArenaShowcase";
 import BrandLockup from "@/components/BrandLockup";
 import CardFan from "@/components/CardFan";
+import CollectionShowcase from "@/components/CollectionShowcase";
+import CookieRain from "@/components/CookieRain";
 import FutiCardRules from "@/components/FutiCardRules";
 import FutiWordmark from "@/components/FutiWordmark";
+import StadiumBanner from "@/components/StadiumBanner";
 import { campaign } from "@/lib/campaign";
 import { cartas } from "@/lib/futiCards";
 import { produtosElegiveis } from "@/lib/numeroDaSorte";
@@ -13,10 +17,30 @@ import { produtosElegiveis } from "@/lib/numeroDaSorte";
 /**
  * Página de detalhe de um produto participante — /produtos/[slug].
  *
- * O Futi Card ganha seções extras (o leque com as 23 cartas e o manual de
- * regras do jogo); os demais produtos mostram só a ficha padrão. Ver
- * components/CardFan.tsx e components/FutiCardRules.tsx.
+ * Cada produto ganha seções extras além da ficha padrão:
+ *  - Futi Card: leque com as 23 cartas e manual de regras (CardFan, FutiCardRules);
+ *  - Futi Collection: banner de estádio e os 6 bonequinhos (CollectionShowcase);
+ *  - Futi Arena: banner, caixa com frente/verso e conteúdo do set (ArenaShowcase).
  */
+
+const BANNERS: Record<
+  string,
+  { src: string; alt: string; frase: string; focal?: string; textoADireita?: boolean }
+> = {
+  "futi-collection": {
+    src: "/images/collection/web/bonecos-no-campo-2.jpg",
+    alt: "Bonequinhos Futi comemorando no gramado de um estádio lotado",
+    frase: "6 bonequinhos para colecionar",
+    focal: "40% 60%",
+  },
+  "futi-arena": {
+    src: "/images/arena/web/futi-arena.jpg",
+    alt: "Caixa do Futi Arena sobre a mesa, com dois bonequinhos e uma bola",
+    frase: "O campo completo para jogar em casa",
+    focal: "28% 55%",
+    textoADireita: true,
+  },
+};
 
 export function generateStaticParams() {
   return produtosElegiveis.map((produto) => ({ slug: produto.slug }));
@@ -35,6 +59,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 export default function ProdutoPagina({ params }: { params: { slug: string } }) {
   const produto = produtosElegiveis.find((p) => p.slug === params.slug);
   if (!produto) notFound();
+  const banner = BANNERS[produto.slug];
 
   return (
     <>
@@ -54,6 +79,8 @@ export default function ProdutoPagina({ params }: { params: { slug: string } }) 
         </div>
       </header>
 
+      {banner && <StadiumBanner {...banner} />}
+
       <main className="mx-auto max-w-3xl px-6 py-16 md:py-24">
         <p className="eyebrow">Produtos participantes</p>
         <h1 className="mt-4 text-3xl font-black uppercase leading-tight tracking-headline sm:text-4xl">
@@ -66,7 +93,7 @@ export default function ProdutoPagina({ params }: { params: { slug: string } }) 
             alt={`Embalagem do produto ${produto.nome}`}
             width={produto.imagemLargura}
             height={produto.imagemAltura}
-            className="h-32 w-auto shrink-0"
+            className="h-40 w-auto shrink-0 animate-hover drop-shadow-2xl"
           />
           <div>
             <p className="max-w-prose leading-relaxed text-ink/75">{produto.descricao}</p>
@@ -103,7 +130,11 @@ export default function ProdutoPagina({ params }: { params: { slug: string } }) 
             </section>
           </>
         )}
+
+        {produto.slug === "futi-collection" && <CollectionShowcase />}
+        {produto.slug === "futi-arena" && <ArenaShowcase />}
       </main>
+      <CookieRain />
     </>
   );
 }

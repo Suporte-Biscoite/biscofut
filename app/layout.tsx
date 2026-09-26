@@ -10,6 +10,7 @@ import "@fontsource/montserrat/500.css";
 import "@fontsource/montserrat/700.css";
 
 import "./globals.css";
+import { TEMA } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Concorra a uma camiseta autografada pelo Neymar Jr. | Promoção Futi",
@@ -31,7 +32,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={TEMA === "futi" ? "tema-futi" : undefined}>
       <body>
         <a
           href="#conteudo"

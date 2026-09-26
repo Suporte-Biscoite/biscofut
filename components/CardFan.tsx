@@ -34,7 +34,7 @@ const RARIDADE_LABEL: Record<RaridadeCarta, string> = {
 const RARIDADE_STYLE: Record<RaridadeCarta, string> = {
   normal: "bg-steel/15 text-steel",
   premium: "bg-navy/10 text-navy",
-  golden: "bg-amber-400/20 text-amber-700",
+  golden: "bg-gold/20 text-gold",
 };
 
 export default function CardFan({ cartas }: { cartas: Carta[] }) {

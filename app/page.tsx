@@ -7,6 +7,7 @@ import Participation from "@/components/Participation";
 import LegalDocs from "@/components/LegalDocs";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
+import CookieRain from "@/components/CookieRain";
 
 /**
  * Ordem das seções: o que o participante quer saber, na ordem em que decide.
@@ -32,6 +33,7 @@ export default function Home() {
         <FAQ />
       </main>
       <Footer />
+      <CookieRain />
     </>
   );
 }

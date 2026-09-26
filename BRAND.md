@@ -95,6 +95,21 @@ HTML servido) e do board da campanha.
 | `line` | `#E0E0E0` | biscoite.com.br | Bordas, divisórias, inputs |
 | `alert` | `#A21D2D` | biscoite.com.br | Erros de formulário, avisos legais |
 
+### 2.1.1 Tema "futi" (cores invertidas) — ativo
+
+Pedido da Biscoitê (Raul): a página precisa ter mais cara de **Futi**, não só
+de Biscoitê. A resposta foi inverter a paleta — onde era branco entra o azul
+das caixas da coleção (`#1F3160`, amostrado das embalagens), e onde era azul
+entra branco. Botões ficam brancos com texto azul; o footer fica branco.
+
+- A chave fica em `lib/theme.ts` (`TEMA = "futi" | "classico"`). Trocar para
+  `"classico"` volta ao visual da tabela acima, sem mexer em mais nada.
+- Os valores dos dois temas estão em `app/globals.css` (variáveis `--c-*`).
+  Os nomes das classes (`text-navy`, `bg-paper`, `bg-white`…) continuam os do
+  tema clássico — no tema futi, `white` é azul e `navy` é branco.
+- Os logotipos PNG trocam de variante sozinhos (`tomDoLogo()` em `lib/theme.ts`).
+- Branco literal (que não deve inverter) vai em `style`, não em classe.
+
 ### 2.2 A regra que segura a identidade
 
 O board é **monocromático em azul-marinho sobre off-white**. Foi essa a

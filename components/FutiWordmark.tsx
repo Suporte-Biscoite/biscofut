@@ -5,6 +5,8 @@
  * via `tone`, não via classe de cor.
  */
 
+import { tomDoLogo } from "@/lib/theme";
+
 const SRC = {
   navy: "/images/futi-azul.png",
   light: "/images/futi-branco.png",
@@ -19,5 +21,5 @@ export default function FutiWordmark({
   tone?: "navy" | "light";
 }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={SRC[tone]} alt="futi" className={className} />;
+  return <img src={SRC[tomDoLogo(tone)]} alt="futi" className={className} />;
 }

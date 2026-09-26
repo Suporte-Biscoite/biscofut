@@ -42,6 +42,39 @@
      Montserrat fecha a lista porque é a fonte de UI do site da Biscoitê. */
   --font-noka: "Noka", "Poppins", "Montserrat", ui-sans-serif, system-ui,
     -apple-system, sans-serif;
+
+  /* Tema clássico: azul-marinho sobre off-white (board original).
+     Canais RGB soltos para o Tailwind aplicar opacidade (bg-navy/20 etc.). */
+  --c-white: 255 255 255;
+  --c-ink: 10 25 47; /* #0A192F */
+  --c-navy: 33 59 110; /* #213B6E */
+  --c-navy-deep: 22 41 74; /* #16294A */
+  --c-steel: 88 129 165; /* #5881A5 */
+  --c-steel-soft: 101 128 162; /* #6580A2 */
+  --c-sky: 190 215 231; /* #BED7E7 */
+  --c-sky-light: 158 189 228; /* #9EBDE4 */
+  --c-paper: 245 245 245; /* #F5F5F5 */
+  --c-line: 224 224 224; /* #E0E0E0 */
+  --c-alert: 162 29 45; /* #A21D2D */
+  --c-gold: 180 83 9; /* #B45309 */
+}
+
+/* Tema futi: cores invertidas. Branco vira o azul das caixas da coleção
+   (amostrado das embalagens: #1F3160); azul vira branco. Ativado por
+   lib/theme.ts → classe no <html>. */
+.tema-futi {
+  --c-paper: 31 49 96; /* #1F3160 — azul da caixa: fundo da página */
+  --c-white: 39 62 120; /* #273E78 — seções e cards, um tom acima */
+  --c-navy: 255 255 255; /* títulos, botões */
+  --c-navy-deep: 214 226 244; /* #D6E2F4 — hover de botão */
+  --c-ink: 255 255 255; /* texto corrido e painéis de destaque */
+  --c-steel: 158 189 228; /* #9EBDE4 — rótulos sobre azul */
+  --c-steel-soft: 180 200 230; /* #B4C8E6 */
+  --c-sky: 60 98 180; /* #3C62B4 — badges; legível sobre azul e sobre branco */
+  --c-sky-light: 127 163 219; /* #7FA3DB */
+  --c-line: 64 88 146; /* #405892 — bordas sobre azul */
+  --c-alert: 255 150 150; /* #FF9696 — erro legível sobre azul */
+  --c-gold: 252 211 77; /* #FCD34D */
 }
 
 @layer base {
@@ -67,7 +100,7 @@
   }
 
   :focus-visible {
-    outline: 3px solid #5881a5;
+    outline: 3px solid rgb(var(--c-steel));
     outline-offset: 3px;
     border-radius: 2px;
   }
