@@ -2,7 +2,8 @@
 
 /**
  * Chuva de biscoitos: os 5 biscoitos temáticos caindo pela tela, girando e
- * balançando de leve, por cima do site inteiro.
+ * balançando de leve, por cima do site inteiro. Chove só ao abrir a página
+ * (uma queda por biscoito, ~10 s no total) e depois para.
  *
  * - `pointer-events-none`: nunca bloqueia clique, seleção ou formulário.
  * - Fica abaixo do header (z-30 < z-40).
@@ -26,15 +27,15 @@ function gerador(semente: number) {
 
 const aleatorio = gerador(20261001);
 const GOTAS = Array.from({ length: QUANTIDADE }, (_, i) => {
-  const duracao = 11 + aleatorio() * 10; // 11–21 s por queda
+  const duracao = 4 + aleatorio() * 3; // 4–7 s por queda
   return {
     src: BISCOITOS[i % BISCOITOS.length],
     // Espalha em faixas para não amontoar, com variação dentro de cada faixa.
     left: ((i + aleatorio() * 0.8) / QUANTIDADE) * 100,
     tamanho: 30 + Math.round(aleatorio() * 30), // 30–60 px
     duracao,
-    // Atraso negativo: a chuva já começa no meio, sem tela vazia no início.
-    atraso: -aleatorio() * duracao,
+    // Cada biscoito entra em um momento dos primeiros 2,5 s e cai uma vez só.
+    atraso: aleatorio() * 2.5,
     giro: aleatorio() > 0.5 ? 1 : -1,
     // Só alguns biscoitos aparecem no celular, para não poluir a tela pequena.
     soDesktop: i % 2 === 1,
@@ -56,6 +57,10 @@ export default function CookieRain() {
             width: gota.tamanho,
             animationDuration: `${gota.duracao}s`,
             animationDelay: `${gota.atraso}s`,
+            // Uma queda só; "both" segura o biscoito acima da tela durante o
+            // atraso e abaixo dela depois que termina.
+            animationIterationCount: 1,
+            animationFillMode: "both",
           }}
         >
           <img

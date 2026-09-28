@@ -23,14 +23,9 @@ export default function Prizes() {
 
         <div className="mt-14">
           <article className="card p-8 sm:p-10">
-            <div className="flex items-start justify-between gap-4">
-              <span className="rounded-full bg-sky px-3.5 py-1.5 text-[10px] font-black uppercase tracking-label text-navy">
-                Prêmio principal
-              </span>
-              <span className="text-5xl font-black leading-none text-navy sm:text-6xl">
-                {itensAutografados.quantidade}
-              </span>
-            </div>
+            <span className="inline-block rounded-full bg-sky px-3.5 py-1.5 text-[10px] font-black uppercase tracking-label text-navy">
+              Prêmio principal
+            </span>
 
             <h3 className="mt-7 text-2xl font-black uppercase leading-tight tracking-headline">
               Camiseta do Brasil Oficial Autografada pelo Neymar Jr.

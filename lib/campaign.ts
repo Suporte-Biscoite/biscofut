@@ -39,7 +39,7 @@ export const campaign = {
   /** Certificado de Autorização emitido pela SPA/MF. */
   certificado: {
     /** Preencher com o nº do CA assim que emitido. Ex.: "04.123456/2026". */
-    numero: null as string | null,
+    numero: "2026/06438" as string | null,
     /** URL do PDF do CA hospedado. Obrigatório exibir na LP após a emissão. */
     pdf: null as string | null,
   },

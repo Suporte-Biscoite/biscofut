@@ -118,9 +118,9 @@ export default function Regulamento() {
         </p>
         <Bullets
           items={[
-            "P1 — Card: Biscoito + Card colecionável → 1 número da sorte;",
-            "P2 — Bonequinho: Biscoito + Boneco surpresa do Neymar Jr. (6 modelos; o dourado é item colecionável raro, sem vantagem promocional vinculada) → 6 números da sorte;",
-            "P3 — Campo: Campo de futebol + 2 bonecos + 2 bolas → 25 números da sorte.",
+            "P1 — Futi Card: Biscoito + Card colecionável → 1 número da sorte;",
+            "P2 — Futi Collection: Biscoito + Boneco surpresa do Neymar Jr. (6 modelos; o dourado é item colecionável raro, sem vantagem promocional vinculada) → 6 números da sorte;",
+            "P3 — Futi Arena: Campo de futebol + 2 bonecos + 2 bolas → 25 números da sorte.",
           ]}
         />
       </Clause>
@@ -128,9 +128,9 @@ export default function Regulamento() {
       <Clause n="5" title="Produtos participantes">
         <Bullets
           items={[
-            "P1 — Card: Biscoito + Card colecionável.",
-            "P2 — Bonequinho: Biscoito + Boneco surpresa do Neymar Jr. (6 modelos; o dourado é item colecionável raro, sem vantagem promocional vinculada).",
-            "P3 — Campo: Campo de futebol + 2 bonecos + 2 bolas.",
+            "P1 — Futi Card: Biscoito + Card colecionável.",
+            "P2 — Futi Collection: Biscoito + Boneco surpresa do Neymar Jr. (6 modelos; o dourado é item colecionável raro, sem vantagem promocional vinculada).",
+            "P3 — Futi Arena: Campo de futebol + 2 bonecos + 2 bolas.",
           ]}
         />
       </Clause>
