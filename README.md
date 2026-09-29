@@ -67,6 +67,7 @@ assinaturas Biscoitê e Neymar Jr.
 
 - Next.js 14 (App Router) + TypeScript
 - Tailwind CSS
+- Postgres (Neon, pelo Marketplace da Vercel), via `pg` — ver `lib/db.ts`
 - Fontes auto-hospedadas via Fontsource: Poppins (substituto da Noka),
   Montserrat (fallback, é a fonte de UI do site da Biscoitê)
 
@@ -76,8 +77,15 @@ Node.js 18.18+.
 
 ```bash
 npm install
-npm run dev            # http://localhost:3000
+vercel env pull .env.local   # traz a DATABASE_URL do projeto
+npm run dev                  # http://localhost:3000
 ```
+
+As rotas de API precisam de `DATABASE_URL`. **Use uma branch de dev do
+Neon**, nunca o banco de produção: no painel do Neon, crie a branch `dev` e
+coloque a URL dela no `.env.local`. As tabelas são criadas sozinhas na
+primeira requisição (`lib/db.ts`) — não há passo de migração. Em `next dev`
+existe um participante de teste (CPF 529.982.247-25, senha `teste123`).
 
 Para ver o fluxo completo de participação sem esperar o CA, crie um
 `.env.local` com `NEXT_PUBLIC_PROMO_STATUS=ACTIVE` — ou use o alternador de
@@ -143,11 +151,8 @@ que não constitui oferta. Vira prêmio de verdade com uma linha:
 
 ## Próximos passos
 
-A interface, as validações (cliente e servidor), as regras de negócio e os
-documentos legais estão prontos. Falta **persistência**: a rota de API usa um
-`Map` em memória, documentado como stub.
-
-O que entra no lugar, e por quê — incluindo as três invariantes que precisam
-ser do banco e não da aplicação (`UNIQUE` em chave de acesso, `UNIQUE` em
-número da sorte, emissão dentro de transação) — está em
+O banco está ligado (`lib/db.ts` e `lib/store.ts`), com as garantias que o
+protocolo exige feitas pelo próprio Postgres: pedido processado uma vez só,
+número da sorte com um dono só e teto por CPF conferido em transação. O que
+falta — contrato real da Nexaas, rate limiting, apuração — está em
 [FLUXO.md §6](./FLUXO.md).

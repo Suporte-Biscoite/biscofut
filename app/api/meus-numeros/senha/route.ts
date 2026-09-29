@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const participante = buscarParticipante(cpf);
+  const participante = await buscarParticipante(cpf);
   const emailConfere = participante?.email?.trim().toLowerCase() === email;
 
   if (!participante || !emailConfere) {
@@ -55,23 +55,22 @@ export async function POST(request: Request) {
     );
   }
 
-  if (participante.senhaHash !== null) {
+  if (participante.senhaHash !== null || !(await definirSenha(cpf, hashSenha(senha)))) {
     return NextResponse.json(
       { ok: false, mensagem: "Este CPF já tem senha cadastrada. Use a opção \"Entrar\"." },
       { status: 409 }
     );
   }
 
-  definirSenha(cpf, hashSenha(senha));
-
   return NextResponse.json({
     ok: true,
     nome: participante.nome,
     acumulado: participante.numeros.length,
     limite: campaign.regras.maxNumerosPorCpf,
-    numeros: participante.numeros
-      .slice()
-      .sort((a, b) => a.emitidoEm.localeCompare(b.emitidoEm))
-      .map((n) => ({ numero: n.numero, origem: n.origem, emitidoEm: n.emitidoEm })),
+    numeros: participante.numeros.map((n) => ({
+      numero: n.numero,
+      origem: n.origem,
+      emitidoEm: n.emitidoEm,
+    })),
   });
 }

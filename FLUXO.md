@@ -262,37 +262,37 @@ O que está pronto: interface completa, validações de cliente e de servidor,
 regras de negócio, gating por autorização, documentos legais e o contrato da
 API. O que falta é persistência e infraestrutura.
 
-### 6.1 Banco (bloqueante)
+### 6.1 Banco — feito
 
-`lib/store.ts` usa um `Map` em memória, compartilhado pelos dois canais
-(nota fiscal e webhook Nexaas) via `globalThis` — truque que só resolve o
-compartilhamento **dentro de um único processo** (necessário até para o
-`next dev` funcionar, já que cada rota de API é compilada como um módulo
-separado). Em produção na Vercel, cada rota de API vira uma função
-serverless independente, e cold starts zeram a memória — ou seja, isto
-continua sendo só para provar o fluxo. Substituir por:
+Postgres no Neon, pelo Marketplace da Vercel. Conexão em `lib/db.ts`, que
+também cria o esquema sozinho na primeira requisição; operações em
+`lib/store.ts`.
 
 ```sql
-participante(id, nome, cpf UNIQUE, nascimento, email, telefone, senha_hash, criado_em)
-consentimento(id, participante_id, tipo, aceito_em, ip, user_agent, versao_doc)
-nota_fiscal(id, participante_id, chave_acesso UNIQUE, cnpj_emitente,
-            emissao, cupom_key, status, validado_em)
-pedido_nexaas(id, participante_id, pedido_id UNIQUE, status, recebido_em)
-numero_sorte(id, participante_id, origem, referencia_id, numero UNIQUE, criado_em)
+participantes(cpf PK, nome, email, senha_hash, criado_em, atualizado_em)
+pedidos(origem, referencia, cpf, numeros_solicitados, numeros_concedidos,
+        recebido_em, PK (origem, referencia))
+pool_numeros(posicao PK, numero UNIQUE)   -- 00000–99999, embaralhados 1 vez
+contador_numeros(proximo)                 -- próxima posição livre da fila
+numeros(numero PK, cpf, origem, referencia, emitido_em)
 ```
 
-Três invariantes que **têm** que ser do banco, não da aplicação:
+As invariantes ficam no banco, não na aplicação:
 
-- `UNIQUE (chave_acesso)` e `UNIQUE (pedido_id)` — a checagem em código tem
-  janela de corrida; duas requisições simultâneas com a mesma nota (ou dois
-  reenvios do mesmo webhook) passam as duas.
-- `UNIQUE (numero)` + emissão **dentro de transação** — sem isso, dois
-  cadastros concorrentes recebem o mesmo número da sorte, e aí a apuração
-  tem dois donos para um número.
-- Teto por CPF conferido com `SELECT ... FOR UPDATE` na mesma transação.
+- **Pedido processado uma vez só** — PK `(origem, referencia)` em `pedidos`;
+  reenvio do webhook cai no `ON CONFLICT DO NOTHING` e não gera nada.
+- **Número com um dono só** — PK em `numeros.numero`. A emissão reserva
+  posições da fila embaralhada com `UPDATE contador_numeros ... RETURNING`,
+  que trava a linha: compras simultâneas saem uma depois da outra.
+- **Teto por CPF** — conferido na mesma transação, com a linha do
+  participante travada pelo upsert.
+- **Distribuição aleatória** (regulamento, cláusula 6) — a série inteira é
+  embaralhada na criação do banco e a ordem fica gravada em
+  `pool_numeros`, auditável.
 
-`consentimento` guarda IP, user-agent, momento e **versão do documento
-aceito**: é o que prova, meses depois, o que a pessoa aceitou.
+Pendente: `consentimento` (aceites com IP, user-agent e versão do
+documento) — depende de onde o aceite do regulamento vai acontecer agora
+que não há mais formulário de cadastro de nota.
 
 ### 6.2 Restante
 
@@ -302,9 +302,8 @@ aceito**: é o que prova, meses depois, o que a pessoa aceitou.
 | Rate limiting | por IP e por CPF, no endpoint de cadastro, em `/api/meus-numeros` (login) e em `/api/meus-numeros/senha` (criação) — este último é o alvo óbvio de força bruta contra o par CPF+e-mail |
 | CAPTCHA | contra automação em massa, principalmente em `/api/meus-numeros/senha` |
 | E-mail transacional | confirmação com os números emitidos; e viabiliza um fluxo de "esqueci minha senha" em `/meus-numeros`, que hoje não existe |
-| Área do participante | esqueleto pronto em `/meus-numeros`, com login por CPF + senha (§3.5) — falta banco de verdade por trás |
+| Área do participante | `/meus-numeros`, com login por CPF + senha (§3.5), lendo do banco |
 | Webhook Nexaas | contrato ainda não confirmado com a Nexaas — ver §3.5 |
-| Auditoria de notas | fila de conferência manual/OCR das imagens |
 | Apuração | entrada dos resultados oficiais da Loteria Federal |
 | `robots: index` | hoje `noindex` em `app/layout.tsx` — liberar na publicação |
 | Aviso de cookies | se houver medição de audiência |

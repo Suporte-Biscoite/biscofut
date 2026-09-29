@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { campaign } from "@/lib/campaign";
 import { transactionsAllowed } from "@/lib/promoStatus";
 import { isValidCPF, onlyDigits } from "@/lib/masks";
-import { aplicarTeto, calcularNumeros, produtosElegiveis, type ItemCompra } from "@/lib/numeroDaSorte";
-import { acumuladoPorCpf, referenciaJaProcessada, registrarNumeros } from "@/lib/store";
+import { calcularNumeros, produtosElegiveis, type ItemCompra } from "@/lib/numeroDaSorte";
+import { emitirNumerosDoPedido } from "@/lib/store";
 import {
   NEXAAS_SKU_PARA_PRODUTO,
   NEXAAS_STATUS_PAGO,
@@ -19,7 +19,8 @@ import {
  * gerado (evento irrelevante, CPF inválido, pedido já processado) — é assim
  * que se evita a Nexaas ficar reenviando o mesmo webhook indefinidamente.
  * Só devolvemos erro (401/400) quando o problema é nosso lado não conseguir
- * nem entender a requisição.
+ * nem entender a requisição — ou 500 quando o banco falha, e aí o reenvio da
+ * Nexaas é justamente o que queremos (o pedido não foi registrado).
  *
  * ⚠️  O formato do payload e o header de assinatura ainda são suposição —
  *     ver lib/nexaas.ts. E a checagem de `transactionsAllowed()` abaixo tem
@@ -62,10 +63,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (referenciaJaProcessada("nexaas", pedido.id)) {
-    return NextResponse.json({ ok: true, ignorado: "pedido já processado" });
-  }
-
   const cpf = onlyDigits(pedido.customer?.document ?? "");
   if (!isValidCPF(cpf)) {
     return NextResponse.json({ ok: false, mensagem: "CPF do comprador ausente ou inválido." });
@@ -84,24 +81,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, ignorado: "nenhum produto participante neste pedido" });
   }
 
-  const jaAcumulados = acumuladoPorCpf(cpf);
-  const { concedidos, excedente } = aplicarTeto(solicitados, jaAcumulados);
-
-  const emitidos = registrarNumeros({
+  const resultado = await emitirNumerosDoPedido({
     cpf,
     nome: pedido.customer?.name,
     email: pedido.customer?.email,
     origem: "nexaas",
-    referencia: pedido.id,
-    quantidade: concedidos,
+    referencia: String(pedido.id),
+    solicitados,
   });
+
+  if (resultado.status === "ja-processado") {
+    return NextResponse.json({ ok: true, ignorado: "pedido já processado" });
+  }
 
   return NextResponse.json({
     ok: true,
     cpf,
     pedido: pedido.id,
-    numerosGerados: emitidos.map((n) => n.numero),
-    acumulado: jaAcumulados + concedidos,
-    excedente,
+    numerosGerados: resultado.numeros.map((n) => n.numero),
+    acumulado: resultado.acumulado,
+    excedente: resultado.excedente,
   });
 }

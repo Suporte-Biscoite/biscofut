@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, mensagem: "Informe CPF e senha." }, { status: 422 });
   }
 
-  const participante = buscarParticipante(cpf);
+  const participante = await buscarParticipante(cpf);
   const senhaConfere = participante?.senhaHash && verificarSenha(senha, participante.senhaHash);
 
   if (!participante || !senhaConfere) {
@@ -44,9 +44,10 @@ export async function POST(request: Request) {
     nome: participante.nome,
     acumulado: participante.numeros.length,
     limite: campaign.regras.maxNumerosPorCpf,
-    numeros: participante.numeros
-      .slice()
-      .sort((a, b) => a.emitidoEm.localeCompare(b.emitidoEm))
-      .map((n) => ({ numero: n.numero, origem: n.origem, emitidoEm: n.emitidoEm })),
+    numeros: participante.numeros.map((n) => ({
+      numero: n.numero,
+      origem: n.origem,
+      emitidoEm: n.emitidoEm,
+    })),
   });
 }

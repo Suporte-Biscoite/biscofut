@@ -1,34 +1,19 @@
 /**
- * Registro de participantes e números da sorte. A única entrada é o webhook
- * de pedidos da Nexaas (app/api/webhooks/nexaas): cada compra com CPF soma
- * números ao participante daquele CPF, até o teto de 200 números do
- * regulamento (cláusula 6.3) em toda a promoção.
+ * Registro de participantes e números da sorte, no Postgres (lib/db.ts).
  *
- * ⚠️  STUB EM MEMÓRIA — E MESMO ASSIM, SÓ SERVE PARA UM PROCESSO SÓ. Cada
- *     rota de API do Next (app/api/.../route.ts) é compilada como um módulo
- *     separado; em produção na Vercel, cada rota vira uma função serverless
- *     independente. Isso quer dizer duas coisas:
+ * A única entrada é o webhook de pedidos da Nexaas (app/api/webhooks/nexaas):
+ * cada compra com CPF soma números ao participante daquele CPF, até o teto
+ * de 200 números do regulamento (cláusula 6.3) em toda a promoção.
  *
- *     1. Sem o truque de guardar o estado em `globalThis` (abaixo), este Map
- *        nem *dentro do mesmo `next dev`* seria compartilhado entre rotas —
- *        cada uma teria a sua própria cópia, e o webhook da Nexaas nunca
- *        apareceria na consulta de /api/meus-numeros. O truque resolve isso
- *        localmente.
- *     2. Ele NÃO resolve produção na Vercel: cada invocação de função
- *        serverless pode cair numa instância de processo diferente (e cold
- *        starts zeram a memória de qualquer jeito). Ou seja, isto continua
- *        sendo só para provar o fluxo — antes de ir ao ar, isto precisa
- *        virar uma tabela real, com:
- *          - UNIQUE em (cpf) para o participante;
- *          - UNIQUE em (origem, referencia) para o registro de cada compra —
- *            é o que impede a Nexaas gerar números duas vezes num reenvio de
- *            webhook;
- *          - emissão do número da sorte dentro de uma transação com o
- *            incremento do sequencial, senão dois pedidos simultâneos
- *            recebem o mesmo número.
- *     Ver FLUXO.md §6.
+ * As três garantias que o protocolo exige ficam no banco, não no código:
+ *   - o mesmo pedido nunca gera números duas vezes (PK em pedidos);
+ *   - um número da sorte nunca tem dois donos (PK em numeros);
+ *   - o teto por CPF é conferido com a linha do participante travada, então
+ *     duas compras simultâneas do mesmo CPF não passam juntas do limite.
  */
 
+import { query, transacao, TAMANHO_SERIE } from "./db";
+import { aplicarTeto, formatNumeroDaSorte } from "./numeroDaSorte";
 import { hashSenha } from "./senha";
 
 export type OrigemNumero = "nexaas";
@@ -47,118 +32,182 @@ export type Participante = {
   email: string | null;
   /** Hash da senha (lib/senha.ts). `null` até o primeiro acesso a /meus-numeros. */
   senhaHash: string | null;
+  /** Em ordem de emissão. */
   numeros: NumeroEmitido[];
 };
 
-type StoreGlobal = {
-  __campanhaStore?: {
-    participantes: Map<string, Participante>;
-    referenciasProcessadas: Set<string>;
-    proximoSequencial: number;
+type LinhaNumero = { numero: number; origem: OrigemNumero; referencia: string; emitido_em: Date };
+
+function paraNumeroEmitido(linha: LinhaNumero): NumeroEmitido {
+  return {
+    numero: formatNumeroDaSorte(linha.numero),
+    origem: linha.origem,
+    referencia: linha.referencia,
+    emitidoEm: linha.emitido_em.toISOString(),
   };
-};
-
-// `globalThis` sobrevive entre módulos recompilados independentemente
-// dentro do mesmo processo Node — é o mesmo truque usado para não recriar o
-// PrismaClient a cada hot-reload em dev. Sem isso, cada rota de API teria a
-// sua própria cópia do Map (ver aviso acima).
-const g = globalThis as StoreGlobal;
-const estado = (g.__campanhaStore ??= {
-  participantes: new Map<string, Participante>(),
-  referenciasProcessadas: new Set<string>(),
-  proximoSequencial: 1,
-});
-
-const participantes = estado.participantes;
-const referenciasProcessadas = estado.referenciasProcessadas;
-
-function chaveReferencia(origem: OrigemNumero, referencia: string): string {
-  return `${origem}:${referencia}`;
 }
 
-/** Evita gerar números duas vezes para o mesmo pedido. */
-export function referenciaJaProcessada(origem: OrigemNumero, referencia: string): boolean {
-  return referenciasProcessadas.has(chaveReferencia(origem, referencia));
-}
+export async function buscarParticipante(cpf: string): Promise<Participante | undefined> {
+  await garantirParticipanteTeste();
 
-export function acumuladoPorCpf(cpf: string): number {
-  return participantes.get(cpf)?.numeros.length ?? 0;
-}
+  const [participante] = await query<{
+    cpf: string;
+    nome: string | null;
+    email: string | null;
+    senha_hash: string | null;
+  }>("SELECT cpf, nome, email, senha_hash FROM participantes WHERE cpf = $1", [cpf]);
+  if (!participante) return undefined;
 
-export function buscarParticipante(cpf: string): Participante | undefined {
-  return participantes.get(cpf);
+  const numeros = await query<LinhaNumero>(
+    `SELECT numero, origem, referencia, emitido_em FROM numeros
+     WHERE cpf = $1 ORDER BY emitido_em, numero`,
+    [cpf]
+  );
+
+  return {
+    cpf: participante.cpf,
+    nome: participante.nome,
+    email: participante.email,
+    senhaHash: participante.senha_hash,
+    numeros: numeros.map(paraNumeroEmitido),
+  };
 }
 
 /**
  * Define a senha de um participante que ainda não tem uma — é o "primeiro
- * acesso" de /meus-numeros, feito depois de confirmar CPF + e-mail. Se o
- * participante não existe ou já tem senha, não faz nada (quem chama decide
- * a mensagem: "não encontramos" ou "já existe senha, faça login").
+ * acesso" de /meus-numeros, feito depois de confirmar CPF + e-mail. O
+ * `senha_hash IS NULL` no próprio UPDATE impede que dois primeiros acessos
+ * simultâneos troquem a senha um do outro. Devolve false se o participante
+ * não existe ou já tem senha.
  */
-export function definirSenha(cpf: string, senhaHash: string): boolean {
-  const participante = participantes.get(cpf);
-  if (!participante || participante.senhaHash !== null) return false;
-
-  participante.senhaHash = senhaHash;
-  return true;
+export async function definirSenha(cpf: string, senhaHash: string): Promise<boolean> {
+  const linhas = await query<{ cpf: string }>(
+    `UPDATE participantes SET senha_hash = $2, atualizado_em = now()
+     WHERE cpf = $1 AND senha_hash IS NULL RETURNING cpf`,
+    [cpf, senhaHash]
+  );
+  return linhas.length === 1;
 }
 
+export type ResultadoEmissao =
+  | { status: "ja-processado" }
+  | {
+      status: "emitido";
+      numeros: NumeroEmitido[];
+      /** Total do CPF depois desta compra. */
+      acumulado: number;
+      /** Números que a compra renderia, mas o teto por CPF cortou. */
+      excedente: number;
+    };
+
 /**
- * Registra `quantidade` números novos para o CPF, já respeitando o teto
- * (quem chama decide `quantidade` a partir de aplicarTeto). Atualiza nome e
- * e-mail se vierem preenchidos, sem apagar o que já existia.
+ * Registra o pedido e emite os números dele, tudo numa transação só.
+ *
+ * `solicitados` é o que a compra rende (calcularNumeros); o teto é aplicado
+ * aqui dentro, com a linha do participante travada. O pedido fica
+ * registrado mesmo quando o teto zera os números — é o histórico da compra.
  */
-export function registrarNumeros(params: {
+export async function emitirNumerosDoPedido(params: {
   cpf: string;
   nome?: string | null;
   email?: string | null;
   origem: OrigemNumero;
   referencia: string;
-  quantidade: number;
-}): NumeroEmitido[] {
-  const { cpf, nome, email, origem, referencia, quantidade } = params;
+  solicitados: number;
+}): Promise<ResultadoEmissao> {
+  const { cpf, nome, email, origem, referencia, solicitados } = params;
 
-  const existente =
-    participantes.get(cpf) ?? { cpf, nome: null, email: null, senhaHash: null, numeros: [] };
-  const novos: NumeroEmitido[] = [];
-  const emitidoEm = new Date().toISOString();
+  return transacao(async (client) => {
+    // O upsert trava a linha do participante até o fim da transação.
+    await client.query(
+      `INSERT INTO participantes (cpf, nome, email) VALUES ($1, $2, $3)
+       ON CONFLICT (cpf) DO UPDATE SET
+         nome = COALESCE(EXCLUDED.nome, participantes.nome),
+         email = COALESCE(EXCLUDED.email, participantes.email),
+         atualizado_em = now()`,
+      [cpf, nome || null, email?.trim().toLowerCase() || null]
+    );
 
-  for (let i = 0; i < quantidade; i++) {
-    novos.push({
-      numero: String(estado.proximoSequencial++).padStart(5, "0"),
-      origem,
-      referencia,
-      emitidoEm,
-    });
-  }
+    const pedido = await client.query(
+      `INSERT INTO pedidos (origem, referencia, cpf, numeros_solicitados)
+       VALUES ($1, $2, $3, $4) ON CONFLICT (origem, referencia) DO NOTHING`,
+      [origem, referencia, cpf, solicitados]
+    );
+    if (pedido.rowCount === 0) return { status: "ja-processado" as const };
 
-  existente.nome = nome ?? existente.nome;
-  existente.email = email ?? existente.email;
-  existente.numeros.push(...novos);
-  participantes.set(cpf, existente);
-  referenciasProcessadas.add(chaveReferencia(origem, referencia));
+    const { rows: contagem } = await client.query<{ total: string }>(
+      "SELECT count(*) AS total FROM numeros WHERE cpf = $1",
+      [cpf]
+    );
+    const jaAcumulados = Number(contagem[0].total);
+    const { concedidos, excedente } = aplicarTeto(solicitados, jaAcumulados);
 
-  return novos;
+    let numeros: NumeroEmitido[] = [];
+    if (concedidos > 0) {
+      // Reserva `concedidos` posições da fila embaralhada. O UPDATE trava a
+      // linha do contador, então compras simultâneas saem uma depois da outra.
+      const { rows: reserva } = await client.query<{ inicio: number }>(
+        "UPDATE contador_numeros SET proximo = proximo + $1 RETURNING proximo - $1 AS inicio",
+        [concedidos]
+      );
+      const inicio = reserva[0].inicio;
+      if (inicio + concedidos > TAMANHO_SERIE) {
+        throw new Error("Série de números da sorte esgotada.");
+      }
+
+      const { rows } = await client.query<LinhaNumero>(
+        `INSERT INTO numeros (numero, cpf, origem, referencia)
+         SELECT numero, $1, $2, $3 FROM pool_numeros
+         WHERE posicao >= $4 AND posicao < $5
+         ORDER BY posicao
+         RETURNING numero, origem, referencia, emitido_em`,
+        [cpf, origem, referencia, inicio, inicio + concedidos]
+      );
+      numeros = rows.map(paraNumeroEmitido);
+
+      await client.query(
+        "UPDATE pedidos SET numeros_concedidos = $3 WHERE origem = $1 AND referencia = $2",
+        [origem, referencia, concedidos]
+      );
+    }
+
+    return {
+      status: "emitido" as const,
+      numeros,
+      acumulado: jaAcumulados + concedidos,
+      excedente,
+    };
+  });
 }
 
 /**
  * Participante de teste, só em `next dev`: já nasce com senha e números para
- * dar para entrar em /meus-numeros sem simular um pedido antes. Como o store é
- * em memória, é recriado a cada reinício do servidor. Nunca roda em produção.
+ * dar para entrar em /meus-numeros sem simular um pedido antes. É idempotente
+ * (o pedido "seed-dev" só é processado uma vez) e nunca roda em produção.
  *
  *   CPF:    529.982.247-25
  *   E-mail: teste@biscoite.com.br
  *   Senha:  teste123
  */
 const CPF_TESTE = "52998224725";
-if (process.env.NODE_ENV === "development" && !participantes.has(CPF_TESTE)) {
-  registrarNumeros({
-    cpf: CPF_TESTE,
-    nome: "Participante Teste",
-    email: "teste@biscoite.com.br",
-    origem: "nexaas",
-    referencia: "seed-dev",
-    quantidade: 3,
+const globalSeed = globalThis as { __campanhaSeed?: Promise<void> };
+
+function garantirParticipanteTeste(): Promise<void> {
+  if (process.env.NODE_ENV !== "development") return Promise.resolve();
+
+  globalSeed.__campanhaSeed ??= (async () => {
+    await emitirNumerosDoPedido({
+      cpf: CPF_TESTE,
+      nome: "Participante Teste",
+      email: "teste@biscoite.com.br",
+      origem: "nexaas",
+      referencia: "seed-dev",
+      solicitados: 3,
+    });
+    await definirSenha(CPF_TESTE, hashSenha("teste123"));
+  })().catch((erro) => {
+    globalSeed.__campanhaSeed = undefined;
+    throw erro;
   });
-  definirSenha(CPF_TESTE, hashSenha("teste123"));
+  return globalSeed.__campanhaSeed;
 }
