@@ -10,7 +10,7 @@ import { campaign } from "./campaign";
  *
  * - DRAFT      -> nada publicado.
  * - PRE_LAUNCH -> página institucional no ar, ZERO transação: sem cadastro,
- *                 sem nota fiscal, sem número da sorte. Só captura de
+ *                 sem número da sorte. Só captura de
  *                 interesse (e-mail), que não é participação.
  * - ACTIVE     -> CA emitido e registrado: fluxo completo liberado.
  *

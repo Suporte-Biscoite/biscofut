@@ -11,13 +11,11 @@ import { formatCPF, isValidCPF, isValidEmail } from "@/lib/masks";
 /**
  * Consulta de números da sorte, com login por CPF + senha.
  *
- * Serve os dois canais de participação: quem cadastrou a nota fiscal manual
- * na seção "Participar" da home, e quem comprou na loja e recebeu números
- * via webhook da Nexaas (ver app/api/webhooks/nexaas) — os dois alimentam o
- * mesmo participante por CPF em lib/store.ts.
+ * Os números chegam pelas compras com CPF na loja, via webhook da Nexaas
+ * (ver app/api/webhooks/nexaas), e ficam no participante daquele CPF em
+ * lib/store.ts.
  *
- * A senha não existe em nenhum cadastro anterior — nem nota fiscal, nem
- * pedido Nexaas —, então o primeiro acesso é uma etapa própria: confirma
+ * A senha não existe no pedido da Nexaas, então o primeiro acesso é uma etapa própria: confirma
  * CPF + e-mail da compra (a mesma verificação que valia antes da senha
  * existir) e define a senha ali. Da em diante, é CPF + senha — CPF sozinho
  * (que pode vazar ou ser adivinhado) não abre mais os números de ninguém.
@@ -27,7 +25,7 @@ import { formatCPF, isValidCPF, isValidEmail } from "@/lib/masks";
  * que não fazem sentido fora da home.
  */
 
-type Numero = { numero: string; origem: "nota-fiscal" | "nexaas"; emitidoEm: string };
+type Numero = { numero: string; origem: "nexaas"; emitidoEm: string };
 type Resultado = { nome: string | null; acumulado: number; limite: number; numeros: Numero[] };
 type Modo = "entrar" | "criar";
 
@@ -61,7 +59,7 @@ export default function MeusNumeros() {
         <p className="mt-5 leading-relaxed text-ink/75">
           {modo === "entrar"
             ? "Informe seu CPF e a senha cadastrada para ver os números da sorte já emitidos."
-            : "Primeiro acesso: confirme o CPF e o e-mail usados na compra — na nota fiscal ou na loja — e crie uma senha."}
+            : "Primeiro acesso: confirme o CPF e o e-mail informados na compra e crie uma senha."}
         </p>
 
         <div className="mt-7 inline-flex items-center gap-1 rounded-full border border-line bg-white p-1 text-xs">
@@ -312,7 +310,7 @@ function ResultadoNumeros({ resultado }: { resultado: Resultado }) {
         {resultado.numeros.map((n) => (
           <li
             key={n.numero}
-            title={n.origem === "nexaas" ? "Gerado por compra na loja" : "Gerado por nota fiscal cadastrada"}
+            title="Gerado por compra na loja"
             className="rounded-lg bg-navy px-3.5 py-2 font-mono text-sm font-black tracking-wider text-white"
           >
             {n.numero}

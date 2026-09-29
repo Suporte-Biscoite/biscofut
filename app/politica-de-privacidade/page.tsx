@@ -48,17 +48,8 @@ export default function PoliticaDePrivacidade() {
               confirmar a participação e comunicar o resultado.
             </>,
             <>
-              <strong>Dados fiscais da compra:</strong> chave de acesso da nota
-              fiscal e imagem do cupom, usados para validar a participação.
-            </>,
-            <>
               <strong>Dados de participação:</strong> números da sorte
               atribuídos, data e hora dos cadastros.
-            </>,
-            <>
-              <strong>Dados técnicos:</strong> endereço IP e registros de
-              acesso, mantidos por exigência do Marco Civil da Internet e para
-              detectar fraude.
             </>,
             <>
               <strong>Endereço de entrega:</strong> coletado apenas dos
@@ -72,8 +63,8 @@ export default function PoliticaDePrivacidade() {
         <Bullets
           items={[
             <>
-              <strong>Executar a promoção</strong> (cadastro, validação de
-              nota, emissão de números, apuração, entrega) — base:{" "}
+              <strong>Executar a promoção</strong> (cadastro, recebimento
+              das compras, emissão de números, apuração, entrega) — base:{" "}
               <em>execução de contrato</em> (art. 7º, V da LGPD). Sem esses
               dados a participação é impossível.
             </>,
@@ -85,7 +76,7 @@ export default function PoliticaDePrivacidade() {
             </>,
             <>
               <strong>Prevenir fraude</strong> (detectar cadastros duplicados,
-              notas reutilizadas, automação) — base:{" "}
+              uso de CPF de terceiros, automação) — base:{" "}
               <em>legítimo interesse</em> (art. 7º, IX).
             </>,
             <>
@@ -101,7 +92,7 @@ export default function PoliticaDePrivacidade() {
       <Clause n="4" title="Com quem os dados são compartilhados">
         <Bullets
           items={[
-            "Operadores contratados para executar a promoção (hospedagem, envio de e-mail, auditoria de notas fiscais e logística de entrega), sempre limitados às finalidades desta política.",
+            "Operadores contratados para executar a promoção (hospedagem, envio de e-mail, integração com o sistema de vendas das lojas e logística de entrega), sempre limitados às finalidades desta política.",
             <>
               A {campaign.legal.orgao} e demais autoridades, quando exigido por
               lei ou para a prestação de contas da promoção.
@@ -153,7 +144,6 @@ export default function PoliticaDePrivacidade() {
           items={[
             "Tráfego cifrado em HTTPS em todo o site.",
             "Acesso aos dados restrito a pessoas autorizadas, com registro de acesso.",
-            "Imagens de notas fiscais armazenadas em repositório privado, sem URL pública.",
             "Nenhum dado sensível de pagamento é coletado — a promoção não processa pagamentos.",
           ]}
         />

@@ -101,10 +101,6 @@ export const campaign = {
     idadeMinima: 18,
     /** Teto de números da sorte por CPF em toda a campanha. */
     maxNumerosPorCpf: 200,
-    /** Uma nota fiscal só pode ser cadastrada uma vez, por qualquer CPF. */
-    notaFiscalUnica: true,
-    /** Prazo para cadastrar a nota após a compra, em dias. */
-    prazoCadastroNotaDias: 30,
   },
 
   documentos: {

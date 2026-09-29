@@ -77,10 +77,6 @@ export default function EligibleProducts() {
           ))}
         </div>
 
-        <p className="mt-6 text-xs leading-relaxed text-ink/50">
-          Pesos preliminares. Os valores finais são os declarados no
-          regulamento protocolado na SPA/MF e prevalecem sobre esta página.
-        </p>
       </div>
     </section>
   );

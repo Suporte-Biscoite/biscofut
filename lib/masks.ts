@@ -3,8 +3,12 @@
  * (nome completo, CPF, e-mail, telefone).
  *
  * Tudo roda no navegador, só para dar erro imediato em vez de ida e volta ao
- * servidor. A validação que vale é a do backend — ver app/api/participacao.
+ * servidor. A validação que vale é a do backend — ver app/api/meus-numeros.
  */
+
+export function onlyDigits(value: string): string {
+  return value.replace(/D/g, "");
+}
 
 export function formatCPF(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);

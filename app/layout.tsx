@@ -15,7 +15,7 @@ import { TEMA } from "@/lib/theme";
 export const metadata: Metadata = {
   title: "Concorra a uma camiseta autografada pelo Neymar Jr. | Promoção Futi",
   description:
-    "Compre produtos Futi, cadastre sua nota fiscal e concorra a uma das 22 camisetas autografadas pelo Neymar Jr. Promoção comercial Biscoitê sujeita a autorização da SPA/MF.",
+    "Compre produtos Futi informando seu CPF e concorra a uma das 22 camisetas autografadas pelo Neymar Jr. Promoção comercial Biscoitê sujeita a autorização da SPA/MF.",
   robots: {
     // A campanha não pode ser divulgada antes do CA — liberar na publicação.
     index: false,

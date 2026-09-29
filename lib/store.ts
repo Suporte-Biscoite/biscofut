@@ -1,10 +1,8 @@
 /**
- * Registro de participantes e números da sorte — compartilhado entre os dois
- * canais de entrada da campanha: o cadastro manual de nota fiscal
- * (app/api/participacao) e o webhook de pedidos da Nexaas
- * (app/api/webhooks/nexaas). Os dois alimentam o mesmo participante por CPF,
- * porque o teto de 200 números do regulamento (cláusula 6.3) é por CPF em
- * toda a promoção, não por canal.
+ * Registro de participantes e números da sorte. A única entrada é o webhook
+ * de pedidos da Nexaas (app/api/webhooks/nexaas): cada compra com CPF soma
+ * números ao participante daquele CPF, até o teto de 200 números do
+ * regulamento (cláusula 6.3) em toda a promoção.
  *
  * ⚠️  STUB EM MEMÓRIA — E MESMO ASSIM, SÓ SERVE PARA UM PROCESSO SÓ. Cada
  *     rota de API do Next (app/api/.../route.ts) é compilada como um módulo
@@ -24,7 +22,7 @@
  *          - UNIQUE em (cpf) para o participante;
  *          - UNIQUE em (origem, referencia) para o registro de cada compra —
  *            é o que impede a Nexaas gerar números duas vezes num reenvio de
- *            webhook, e a nota fiscal ser cadastrada duas vezes;
+ *            webhook;
  *          - emissão do número da sorte dentro de uma transação com o
  *            incremento do sequencial, senão dois pedidos simultâneos
  *            recebem o mesmo número.
@@ -33,12 +31,12 @@
 
 import { hashSenha } from "./senha";
 
-export type OrigemNumero = "nota-fiscal" | "nexaas";
+export type OrigemNumero = "nexaas";
 
 export type NumeroEmitido = {
   numero: string;
   origem: OrigemNumero;
-  /** Chave de acesso da nota (fluxo manual) ou id do pedido (fluxo Nexaas). */
+  /** Id do pedido na Nexaas. */
   referencia: string;
   emitidoEm: string;
 };
@@ -78,7 +76,7 @@ function chaveReferencia(origem: OrigemNumero, referencia: string): string {
   return `${origem}:${referencia}`;
 }
 
-/** Evita gerar números duas vezes para a mesma nota ou o mesmo pedido. */
+/** Evita gerar números duas vezes para o mesmo pedido. */
 export function referenciaJaProcessada(origem: OrigemNumero, referencia: string): boolean {
   return referenciasProcessadas.has(chaveReferencia(origem, referencia));
 }
@@ -145,7 +143,7 @@ export function registrarNumeros(params: {
 
 /**
  * Participante de teste, só em `next dev`: já nasce com senha e números para
- * dar para entrar em /meus-numeros sem cadastrar nota antes. Como o store é
+ * dar para entrar em /meus-numeros sem simular um pedido antes. Como o store é
  * em memória, é recriado a cada reinício do servidor. Nunca roda em produção.
  *
  *   CPF:    529.982.247-25
@@ -158,7 +156,7 @@ if (process.env.NODE_ENV === "development" && !participantes.has(CPF_TESTE)) {
     cpf: CPF_TESTE,
     nome: "Participante Teste",
     email: "teste@biscoite.com.br",
-    origem: "nota-fiscal",
+    origem: "nexaas",
     referencia: "seed-dev",
     quantidade: 3,
   });

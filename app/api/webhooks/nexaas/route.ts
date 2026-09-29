@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { campaign } from "@/lib/campaign";
 import { transactionsAllowed } from "@/lib/promoStatus";
-import { isValidCPF } from "@/lib/masks";
-import { onlyDigits } from "@/lib/notaFiscal";
+import { isValidCPF, onlyDigits } from "@/lib/masks";
 import { aplicarTeto, calcularNumeros, produtosElegiveis, type ItemCompra } from "@/lib/numeroDaSorte";
 import { acumuladoPorCpf, referenciaJaProcessada, registrarNumeros } from "@/lib/store";
 import {

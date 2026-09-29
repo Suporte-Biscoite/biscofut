@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { campaign } from "@/lib/campaign";
-import { isValidCPF, isValidEmail } from "@/lib/masks";
-import { onlyDigits } from "@/lib/notaFiscal";
+import { isValidCPF, isValidEmail, onlyDigits } from "@/lib/masks";
 import { hashSenha, senhaForte } from "@/lib/senha";
 import { buscarParticipante, definirSenha } from "@/lib/store";
 
 /**
  * Primeiro acesso a /meus-numeros: cria a senha do participante.
  *
- * Não existe cadastro de senha em nenhum outro lugar — nem no formulário de
- * nota fiscal, nem no pedido da Nexaas — então a prova de que quem está
+ * Não existe cadastro de senha em nenhum outro lugar — nem no pedido da
+ * Nexaas — então a prova de que quem está
  * criando a senha é o dono do CPF é a mesma que já valia antes: CPF + e-mail
  * batendo com o que veio da compra. Uma vez criada, a senha some daqui: só
  * dá para logar por ela em /api/meus-numeros, e essa rota nunca mais deixa

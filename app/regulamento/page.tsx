@@ -30,7 +30,6 @@ export default function Regulamento() {
     <LegalPage
       title='Regulamento – Promoção "Compre e Concorra"'
       updatedAt={null}
-      draft={false}
       intro={`${promotora.razaoSocial}, pessoa jurídica de direito privado, inscrita no CNPJ/MF sob o nº ${promotora.cnpj}, com sede ${promotora.endereco}, neste ato representada por ${promotora.representante.nome}, ${promotora.representante.nacionalidade}, ${promotora.representante.estadoCivil}, portador da cédula de identidade RG nº ${promotora.representante.rg} e inscrito no CPF/MF sob o nº ${promotora.representante.cpf}, doravante denominada "Promotora".`}
     >
       <Clause n="1" title="Modalidade da promoção">
@@ -105,13 +104,14 @@ export default function Regulamento() {
               </a>
               ;
             </>,
-            "realizar cadastro com os seguintes dados: nome completo, CPF, e-mail e telefone;",
-            "informar os dados da nota fiscal (número, CNPJ do estabelecimento, data e valor da compra).",
+            "informar o seu CPF no momento da compra, no caixa da loja;",
+            "cadastrar o CPF na área Meus Números do site para consultar os números da sorte.",
           ]}
         />
         <p>
-          Após validação dos dados, será atribuído ao participante número(s)
-          da sorte.
+          Cada compra com CPF informado será registrada automaticamente pelo
+          sistema de vendas da loja, e o(s) número(s) da sorte serão
+          atribuídos ao CPF do participante.
         </p>
         <p>
           Cada compra válida dará direito a número(s) da sorte:
@@ -235,7 +235,7 @@ export default function Regulamento() {
         <Bullets
           items={[
             "informarem dados falsos ou incompletos;",
-            "utilizarem notas fiscais inválidas, duplicadas ou adulteradas;",
+            "utilizarem CPF de terceiros ou compras canceladas, estornadas ou fraudadas;",
             "adotarem qualquer conduta fraudulenta.",
           ]}
         />

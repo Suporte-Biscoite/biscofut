@@ -3,8 +3,8 @@ import type { InputHTMLAttributes, ReactNode } from "react";
 /**
  * Campos do formulário.
  *
- * Acessibilidade não é enfeite aqui: o formulário coleta CPF e nota fiscal, e
- * vai ser preenchido no celular, muitas vezes na fila do caixa. Por isso cada
+ * Acessibilidade não é enfeite aqui: os formulários coletam CPF e senha, e
+ * vão ser preenchidos no celular. Por isso cada
  * campo tem label real (não placeholder no lugar de label), erro ligado ao
  * input por aria-describedby, e aria-invalid — leitor de tela anuncia o erro
  * em vez do usuário descobrir por eliminação.

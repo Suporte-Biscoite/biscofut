@@ -44,7 +44,7 @@ export default function TermosDeUso() {
       <Clause n="3" title="Condutas vedadas">
         <Bullets
           items={[
-            "Usar robôs, scripts, automações ou qualquer meio artificial para cadastrar notas fiscais ou multiplicar participações.",
+            "Usar robôs, scripts, automações ou qualquer meio artificial para criar cadastros ou multiplicar participações.",
             "Enviar documento fiscal adulterado, de terceiros, duplicado ou que não corresponda a compra real de produto participante.",
             "Tentar burlar limites de participação, inclusive por CPFs de familiares sem conhecimento deles.",
             "Explorar falhas do sistema, executar engenharia reversa, varreduras de vulnerabilidade não autorizadas ou ataques de qualquer natureza.",

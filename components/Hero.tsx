@@ -2,7 +2,6 @@ import FutiWordmark from "./FutiWordmark";
 import Headline from "./Headline";
 import Sticker from "./Sticker";
 import { campaign, formatDate } from "@/lib/campaign";
-import { transactionsAllowed } from "@/lib/promoStatus";
 
 /**
  * Fundo da hero: Neymar Jr. assinando a camiseta.
@@ -18,7 +17,6 @@ import { transactionsAllowed } from "@/lib/promoStatus";
 const FUNDO = "#081226";
 
 export default function Hero() {
-  const aberto = transactionsAllowed();
   const { quantidade } = campaign.premios.itensAutografados;
 
   return (
@@ -76,7 +74,7 @@ export default function Hero() {
             São <strong className="font-black text-[#FFFFFF]">{quantidade} itens</strong>{" "}
             autografados em jogo. Compre qualquer produto{" "}
             <FutiWordmark className="mx-0.5 inline-block h-[0.95em] w-auto translate-y-[0.13em] align-baseline text-[#FFFFFF]" />
-            , cadastre a nota fiscal e receba seus números da sorte.
+             informando seu CPF e receba seus números da sorte.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -84,7 +82,7 @@ export default function Hero() {
               href="#participar"
               className="inline-flex items-center justify-center rounded-full bg-[#FFFFFF] px-7 py-3.5 text-sm font-black uppercase tracking-label text-[#081226] transition-colors hover:bg-[#D6E2F4]"
             >
-              {aberto ? "Cadastrar minha nota" : "Como vai funcionar"}
+              Participe!
             </a>
             <a
               href="#premios"

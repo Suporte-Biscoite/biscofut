@@ -72,7 +72,7 @@ export const produtosElegiveis: ProdutoElegivel[] = [
 
 export type ItemCompra = { sku: string; quantidade: number };
 
-/** Quantos números a nota rende, antes do teto por CPF. */
+/** Quantos números a compra rende, antes do teto por CPF. */
 export function calcularNumeros(itens: ItemCompra[]): number {
   return itens.reduce((total, item) => {
     const produto = produtosElegiveis.find((p) => p.sku === item.sku);

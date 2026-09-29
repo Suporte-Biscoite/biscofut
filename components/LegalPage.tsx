@@ -11,22 +11,16 @@ import { campaign, legalFooterText } from "@/lib/campaign";
  * ou PDFs soltos: o protocolo na SPA pede URL própria para cada um; o
  * participante precisa poder linkar e voltar ao documento que aceitou; e
  * texto em HTML é legível no celular, o que PDF de duas colunas não é.
- *
- * O conteúdo é minuta de trabalho — o texto final é o do jurídico, e o
- * componente sinaliza isso na tela para ninguém publicar por engano.
  */
 export default function LegalPage({
   title,
   updatedAt,
   intro,
-  draft = true,
   children,
 }: {
   title: string;
   updatedAt: string | null;
   intro: string;
-  /** Enquanto true, a página exibe o aviso de minuta. */
-  draft?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -56,15 +50,6 @@ export default function LegalPage({
         <p className="mt-5 text-xs font-medium uppercase tracking-label text-steel">
           Última atualização: {updatedAt ?? "a definir"}
         </p>
-
-        {draft && (
-          <p className="mt-9 rounded-xl border border-dashed border-alert/40 bg-alert/5 px-5 py-4 text-sm leading-relaxed text-alert">
-            <strong className="font-black">Minuta de trabalho.</strong> Este
-            texto estrutura as seções exigidas e serve de base para a redação
-            jurídica. Substituir pela versão final aprovada antes do protocolo
-            na {campaign.legal.orgao}.
-          </p>
-        )}
 
         <div className="legal-body mt-12">{children}</div>
 

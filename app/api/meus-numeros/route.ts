@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { campaign } from "@/lib/campaign";
-import { isValidCPF } from "@/lib/masks";
-import { onlyDigits } from "@/lib/notaFiscal";
+import { isValidCPF, onlyDigits } from "@/lib/masks";
 import { verificarSenha } from "@/lib/senha";
 import { buscarParticipante } from "@/lib/store";
 

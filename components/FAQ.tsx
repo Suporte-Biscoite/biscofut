@@ -4,31 +4,23 @@ import { campaign } from "@/lib/campaign";
 const faq = [
   {
     q: "Preciso comprar para participar?",
-    a: `Sim. Esta é uma promoção do tipo "compre e concorra": a participação depende da compra de um produto participante e do cadastro da nota fiscal correspondente.`,
-  },
-  {
-    q: "Onde encontro a chave de acesso da nota?",
-    a: "São 44 dígitos impressos no rodapé do cupom fiscal ou do DANFE, geralmente ao lado do QR Code. Em compras online, ela aparece no e-mail da nota fiscal eletrônica.",
-  },
-  {
-    q: "Posso cadastrar a mesma nota duas vezes?",
-    a: "Não. Cada nota fiscal vale uma única participação, mesmo que contenha vários produtos participantes — nesse caso os números são somados no cadastro único da nota.",
+    a: `Sim. Esta é uma promoção do tipo "compre e concorra": a participação depende da compra de um produto participante com o seu CPF informado na compra.`,
   },
   {
     q: "Quantos números da sorte posso acumular?",
-    a: `Até ${campaign.regras.maxNumerosPorCpf} números por CPF durante toda a promoção. Ao atingir o limite, novas notas não geram números adicionais.`,
+    a: `Até ${campaign.regras.maxNumerosPorCpf} números por CPF durante toda a promoção. Ao atingir o limite, novas compras não geram números adicionais.`,
   },
   {
-    q: "Tenho prazo para cadastrar a nota?",
-    a: `Sim: até ${campaign.regras.prazoCadastroNotaDias} dias após a data da compra, e sempre dentro do período de participação da promoção.`,
+    q: "Tenho prazo para cadastrar meu CPF?",
+    a: "Sim: o cadastro do CPF no menu Meus Números deve ser feito dentro do período de participação da promoção.",
   },
   {
     q: "Como é feito o sorteio?",
-    a: `Mensalmente, com base nos números sorteados na extração da Loteria Federal do dia, conforme os critérios descritos no regulamento. Não há sorteio interno nem escolha manual de ganhadores.`,
+    a: `Mensalmente, com base nos números sorteados na extração da Loteria Federal do dia, conforme os critérios descritos no regulamento.`,
   },
   {
     q: "Preciso guardar a nota fiscal original?",
-    a: "Sim, até o fim da promoção. Se você for contemplado, a nota original pode ser exigida como comprovação antes da entrega do prêmio.",
+    a: "Sim. Guarde a nota fiscal original da compra do produto até o fim da promoção. Se você for contemplado, ela pode ser exigida como comprovação antes da entrega do prêmio.",
   },
 ];
 
