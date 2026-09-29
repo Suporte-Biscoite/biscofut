@@ -77,6 +77,26 @@
   --c-gold: 252 211 77; /* #FCD34D */
 }
 
+/* Seção clara dentro do tema futi — mesmos valores do tema clássico, mas só
+   para o trecho marcado. Usado nas seções brancas (Produtos, Documentos),
+   que o design pediu no mesmo branco do rodapé. Como são variáveis CSS, tudo
+   dentro da seção (cards, badges, rótulos) volta às cores do board sem
+   mudar uma classe sequer dos componentes. */
+.secao-clara {
+  --c-white: 255 255 255;
+  --c-ink: 10 25 47;
+  --c-navy: 33 59 110;
+  --c-navy-deep: 22 41 74;
+  --c-steel: 88 129 165;
+  --c-steel-soft: 101 128 162;
+  --c-sky: 190 215 231;
+  --c-sky-light: 158 189 228;
+  --c-paper: 245 245 245;
+  --c-line: 224 224 224;
+  --c-alert: 162 29 45;
+  --c-gold: 180 83 9;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

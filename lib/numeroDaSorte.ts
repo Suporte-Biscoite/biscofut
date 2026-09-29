@@ -64,9 +64,9 @@ export const produtosElegiveis: ProdutoElegivel[] = [
     descricao:
       "O set completo: 2 bonequinhos, 2 bolinhas, mini campo e kit de acessórios.",
     numerosPorUnidade: 25,
-    imagem: "/images/arena/web/caixa-frente.png",
-    imagemLargura: 300,
-    imagemAltura: 232,
+    imagem: "/images/arena/web/caixa-frente-nova.png",
+    imagemLargura: 435,
+    imagemAltura: 346,
   },
 ];
 

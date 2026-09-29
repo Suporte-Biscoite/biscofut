@@ -37,7 +37,7 @@ const docs = [
 
 export default function LegalDocs() {
   return (
-    <section id="legal" className="border-t border-line bg-paper py-24 md:py-32">
+    <section id="legal" className="secao-clara bg-white py-24 md:py-32">
       <div className="mx-auto max-w-6xl px-6 md:px-10">
         <p className="eyebrow">Documentos oficiais</p>
         <Headline
@@ -46,7 +46,7 @@ export default function LegalDocs() {
           className="mt-4 max-w-2xl text-3xl sm:text-4xl"
         />
 
-        <div className="mt-14 grid gap-px overflow-hidden rounded-2xl bg-line md:grid-cols-3">
+        <div className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3">
           {docs.map((doc) => (
             <a
               key={doc.titulo}
@@ -70,7 +70,7 @@ export default function LegalDocs() {
         </div>
 
         {/* Certificado de Autorização — exibição obrigatória após a emissão. */}
-        <div className="mt-6 rounded-2xl border border-line bg-white p-7 sm:p-9">
+        <div className="mt-6 rounded-2xl border border-line bg-paper p-7 sm:p-9">
           <p className="text-[11px] font-black uppercase tracking-label text-steel">
             Certificado de Autorização · {campaign.legal.orgao}
           </p>

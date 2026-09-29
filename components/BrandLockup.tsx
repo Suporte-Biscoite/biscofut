@@ -6,9 +6,11 @@
  * todo lugar onde aparecem juntos. Isso substitui a decisão anterior de
  * peso visual equivalente entre Biscoitê e Neymar Jr.
  *
- * A "Biscoitê" já usa o PNG oficial, com variantes azul (fundo claro) e
- * branca (fundo escuro, via `tone="light"`). O "NEYMAR JR." continua
- * aproximação tipográfica — substituir por SVG oficial quando existir.
+ * A "Biscoitê" usa o PNG oficial, com variantes azul (fundo claro) e branca
+ * (fundo escuro, via `tone="light"`). O "NEYMAR JR." usa o logo oficial
+ * (public/logoneymar.png, branco sobre transparente) como máscara CSS: o
+ * desenho vem do arquivo e a cor vem de `currentColor`, então o mesmo PNG
+ * serve para fundo claro e escuro, nos dois temas.
  */
 
 import { tomDoLogo } from "@/lib/theme";
@@ -16,6 +18,17 @@ import { tomDoLogo } from "@/lib/theme";
 const BISCOITE_SRC = {
   navy: "/images/biscoite-azul.png",
   light: "/images/biscoite-branco.png",
+} as const;
+
+const NEYMAR_MASK = {
+  WebkitMaskImage: "url(/logoneymar.png)",
+  maskImage: "url(/logoneymar.png)",
+  WebkitMaskSize: "contain",
+  maskSize: "contain",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskPosition: "center",
+  maskPosition: "center",
 } as const;
 
 export default function BrandLockup({
@@ -32,36 +45,17 @@ export default function BrandLockup({
   return (
     <div className={`flex items-center gap-4 ${color} ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={BISCOITE_SRC[tomDoLogo(tone)]}alt="Biscoitê" className="h-[1.65em] w-auto" />
+      <img src={BISCOITE_SRC[tomDoLogo(tone)]} alt="Biscoitê" className="h-[1.65em] w-auto" />
 
       <span className={`h-[1.75em] w-px shrink-0 ${rule}`} aria-hidden="true" />
 
-      <span className="flex items-center gap-2 leading-none">
-        <NjMonogram className="h-[1.3em] w-auto" />
-        <span className="text-[0.8em] font-black uppercase tracking-label">
-          Neymar Jr.
-        </span>
-      </span>
+      {/* Proporção do PNG oficial: 688 × 226. */}
+      <span
+        role="img"
+        aria-label="Neymar Jr."
+        className="block aspect-[688/226] h-[1.6em] shrink-0 bg-current"
+        style={NEYMAR_MASK}
+      />
     </div>
-  );
-}
-
-/** Monograma NJ — traço contínuo, como no board. */
-function NjMonogram({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 40 52" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M6 46V10a4 4 0 0 1 7-2.6l14 20V6"
-        stroke="currentColor"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M27 26v14a6 6 0 0 1-11 3.4"
-        stroke="currentColor"
-        strokeWidth="4"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
