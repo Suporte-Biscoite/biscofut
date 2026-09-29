@@ -31,6 +31,8 @@
  *     Ver FLUXO.md §6.
  */
 
+import { hashSenha } from "./senha";
+
 export type OrigemNumero = "nota-fiscal" | "nexaas";
 
 export type NumeroEmitido = {
@@ -139,4 +141,26 @@ export function registrarNumeros(params: {
   referenciasProcessadas.add(chaveReferencia(origem, referencia));
 
   return novos;
+}
+
+/**
+ * Participante de teste, só em `next dev`: já nasce com senha e números para
+ * dar para entrar em /meus-numeros sem cadastrar nota antes. Como o store é
+ * em memória, é recriado a cada reinício do servidor. Nunca roda em produção.
+ *
+ *   CPF:    529.982.247-25
+ *   E-mail: teste@biscoite.com.br
+ *   Senha:  teste123
+ */
+const CPF_TESTE = "52998224725";
+if (process.env.NODE_ENV === "development" && !participantes.has(CPF_TESTE)) {
+  registrarNumeros({
+    cpf: CPF_TESTE,
+    nome: "Participante Teste",
+    email: "teste@biscoite.com.br",
+    origem: "nota-fiscal",
+    referencia: "seed-dev",
+    quantidade: 3,
+  });
+  definirSenha(CPF_TESTE, hashSenha("teste123"));
 }
