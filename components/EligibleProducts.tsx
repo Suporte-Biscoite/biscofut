@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import Headline from "./Headline";
+import Sticker from "./Sticker";
 import { produtosElegiveis } from "@/lib/numeroDaSorte";
 
 /** Do que rende mais números para o que rende menos: Arena → Collection → Card. */
@@ -11,7 +12,14 @@ const produtosPorPeso = [...produtosElegiveis].sort(
 export default function EligibleProducts() {
   return (
     <section id="produtos" className="secao-clara bg-white py-24 md:py-32">
-      <div className="mx-auto max-w-6xl px-6 md:px-10">
+      <div className="relative mx-auto max-w-6xl px-6 md:px-10">
+        {/* Selo Neyney + monograma NJ, flutuando ao lado do título. */}
+        <Sticker
+          src="/images/neyneyeneymarjr.png"
+          className="-top-2 right-10 w-44"
+          rotate={-6}
+          delay={600}
+        />
         <p className="eyebrow">Produtos participantes</p>
         <Headline
           lead="Quanto maior o produto,"

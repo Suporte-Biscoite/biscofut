@@ -1,10 +1,19 @@
 /* eslint-disable @next/next/no-img-element */
+import fs from "node:fs";
+import path from "node:path";
+import BonecosGaleria, { type Boneco } from "./BonecosGaleria";
 import Reveal from "./Reveal";
 
 /**
  * Seções extras da página do Futi Collection: os 6 bonequinhos e uma cena em
  * campo. Fotos recortadas e otimizadas em public/images/collection/web/ —
  * os originais (6016px) continuam na pasta de cima, sem uso na página.
+ *
+ * Arte ampliada: ao clicar num bonequinho, abre a imagem de
+ * public/images/collection/bonecos/<arquivo>.webp (ou .svg / .png), se ela
+ * existir — ex.: bonecos/amarelo.webp. Os PNG exportados do Figma ficam em
+ * bonecos/original/. Sem arquivo lá, amplia a própria foto.
+ * Basta soltar o arquivo com o nome certo na pasta; o código não muda.
  */
 
 const BONECOS = [
@@ -16,6 +25,18 @@ const BONECOS = [
   { arquivo: "dourado", nome: "Dourado" },
 ] as const;
 
+const PASTA_DETALHE = path.join(process.cwd(), "public/images/collection/bonecos");
+const FORMATOS_DETALHE = ["webp", "svg", "png"];
+
+function comDetalhe(boneco: (typeof BONECOS)[number]): Boneco {
+  const foto = `/images/collection/web/${boneco.arquivo}.jpg`;
+  const formato = FORMATOS_DETALHE.find((ext) =>
+    fs.existsSync(path.join(PASTA_DETALHE, `${boneco.arquivo}.${ext}`)),
+  );
+  const detalhe = formato ? `/images/collection/bonecos/${boneco.arquivo}.${formato}` : foto;
+  return { ...boneco, foto, detalhe };
+}
+
 export default function CollectionShowcase() {
   return (
     <>
@@ -23,37 +44,10 @@ export default function CollectionShowcase() {
         <h2 className="text-xl font-black uppercase tracking-headline">Os 6 bonequinhos</h2>
         <p className="mt-2 max-w-prose text-sm leading-relaxed text-ink/70">
           Cada caixa traz 1 dos 6 modelos, surpresa. Junte todos para completar a coleção.
+          Toque num bonequinho para ver de perto.
         </p>
 
-        <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
-          {BONECOS.map((boneco, i) => (
-            <li key={boneco.arquivo}>
-              <Reveal delay={i * 90}>
-                <figure className="group relative overflow-hidden rounded-2xl border border-line bg-white shadow-lg transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl">
-                  <img
-                    src={`/images/collection/web/${boneco.arquivo}.jpg`}
-                    alt={`Bonequinho Futi ${boneco.nome}`}
-                    width={1000}
-                    height={1250}
-                    loading="lazy"
-                    className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  {boneco.arquivo === "dourado" && (
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-y-0 left-0 w-1/3 animate-shine"
-                      // Branco literal: no tema futi, a classe `white` é azul.
-                      style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)" }}
-                    />
-                  )}
-                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-paper/90 to-transparent px-4 pb-3 pt-8 text-xs font-black uppercase tracking-label text-navy">
-                    {boneco.nome}
-                  </figcaption>
-                </figure>
-              </Reveal>
-            </li>
-          ))}
-        </ul>
+        <BonecosGaleria bonecos={BONECOS.map(comDetalhe)} />
       </section>
 
       <section className="mt-16">

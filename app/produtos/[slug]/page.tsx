@@ -10,6 +10,7 @@ import CookieRain from "@/components/CookieRain";
 import FutiCardRules from "@/components/FutiCardRules";
 import FutiWordmark from "@/components/FutiWordmark";
 import StadiumBanner from "@/components/StadiumBanner";
+import Sticker from "@/components/Sticker";
 import { campaign } from "@/lib/campaign";
 import { cartas } from "@/lib/futiCards";
 import { produtosElegiveis } from "@/lib/numeroDaSorte";
@@ -81,7 +82,15 @@ export default function ProdutoPagina({ params }: { params: { slug: string } }) 
 
       {banner && <StadiumBanner {...banner} />}
 
-      <main className="mx-auto max-w-3xl px-6 py-16 md:py-24">
+      <main className="relative mx-auto max-w-3xl px-6 py-16 md:py-24">
+        {produto.slug === "futi-collection" && (
+          // Selo "Apertou, girou, chutou" da embalagem, flutuando à direita.
+          <Sticker
+            src="/images/collection/apertou.png"
+            className="right-0 top-20 w-36 xl:-right-40 xl:w-44"
+            rotate={8}
+          />
+        )}
         <p className="eyebrow">Produtos participantes</p>
         <h1 className="mt-4 text-3xl font-black uppercase leading-tight tracking-headline sm:text-4xl">
           {produto.nome}
