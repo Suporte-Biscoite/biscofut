@@ -23,8 +23,15 @@ export const metadata: Metadata = {
   },
   // Ícone servido estático de public/, sem passar pelo otimizador de imagem
   // do Next — a convenção app/icon.png tentou reprocessar o PNG e travou.
+  // Quadrados: o "B" é mais alto que largo e, num PNG retangular, a aba do
+  // navegador achatava o ícone. O do iOS tem fundo branco porque o sistema
+  // pinta de preto o que for transparente.
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/icons/icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: { url: "/icons/apple-icon.png", sizes: "180x180" },
   },
 };
 

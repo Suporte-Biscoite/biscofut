@@ -6,9 +6,11 @@ import { campaign, formatDate } from "@/lib/campaign";
 /**
  * Fundo da hero: Neymar Jr. assinando a camiseta.
  *
- * O material bruto é um GIF de 26 MB (public/gif/). Aqui vai a versão em
- * vídeo (public/gif/web/, ~0,7 MB): mesmo loop, sem som, e o navegador só
- * baixa um dos dois formatos. O poster cobre o primeiro quadro enquanto o
+ * O material bruto é um GIF de 26 MB e só 692×388 (public/gif/). Aqui vai a
+ * versão em vídeo (public/gif/web/, ~3 MB): o pontilhado do GIF é limpo e a
+ * imagem é ampliada para 1384×776 com lanczos, porque no desktop ela ocupa
+ * ~1300 px e o navegador esticaria pior. Mesmo loop, sem som, e o navegador
+ * só baixa um dos dois formatos. O poster cobre o primeiro quadro enquanto o
  * vídeo carrega.
  *
  * O fundo é um azul quase preto fixo, e não um token do tema: o vídeo é
