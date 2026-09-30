@@ -19,7 +19,7 @@ const steps = [
   {
     n: "02",
     title: "Cadastre-se com seus dados",
-    body: "Acesse o menu Meus Números e faça seu primeiro acesso com o CPF e o e-mail informados na compra, criando uma senha. Depois disso, é só entrar com seu CPF e senha.",
+    body: "Acesse o menu Meus Números e cadastre-se uma vez com nome, CPF, data de nascimento, e-mail, celular e uma senha. Depois disso, é só entrar com seu CPF e senha.",
   },
   {
     n: "03",

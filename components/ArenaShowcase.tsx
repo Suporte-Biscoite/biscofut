@@ -32,7 +32,7 @@ export default function ArenaShowcase() {
               }`}
             >
               <img
-                src="/images/arena/web/caixa-frente.png"
+                src="/images/produtos/futi-arena.webp"
                 alt="Caixa do Futi Arena — frente"
                 className="absolute inset-0 h-full w-full object-contain drop-shadow-2xl [backface-visibility:hidden]"
               />

@@ -42,9 +42,9 @@ export const produtosElegiveis: ProdutoElegivel[] = [
     descricao:
       "Futi Card com 1 de 23 cards colecionáveis surpresa, acompanhado de biscoitos temáticos.",
     numerosPorUnidade: 1,
-    imagem: "/images/futi-card-box.png",
-    imagemLargura: 447,
-    imagemAltura: 558,
+    imagem: "/images/produtos/futi-card.webp",
+    imagemLargura: 677,
+    imagemAltura: 900,
   },
   {
     sku: "FUTI-COL",
@@ -53,9 +53,9 @@ export const produtosElegiveis: ProdutoElegivel[] = [
     descricao:
       "Blind box com 1 de 6 bonequinhos colecionáveis surpresa, acompanhada de biscoitos temáticos e bolinha.",
     numerosPorUnidade: 6,
-    imagem: "/images/collection/caixa_collection.png",
-    imagemLargura: 435,
-    imagemAltura: 574,
+    imagem: "/images/produtos/futi-collection.webp",
+    imagemLargura: 555,
+    imagemAltura: 900,
   },
   {
     sku: "FUTI-ARE",
@@ -64,9 +64,9 @@ export const produtosElegiveis: ProdutoElegivel[] = [
     descricao:
       "O set completo: 2 bonequinhos, 2 bolinhas, mini campo e kit de acessórios.",
     numerosPorUnidade: 25,
-    imagem: "/images/arena/web/caixa-frente-nova.png",
-    imagemLargura: 435,
-    imagemAltura: 346,
+    imagem: "/images/produtos/futi-arena.webp",
+    imagemLargura: 1100,
+    imagemAltura: 899,
   },
 ];
 
