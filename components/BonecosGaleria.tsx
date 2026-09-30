@@ -7,7 +7,7 @@ import Reveal from "./Reveal";
 export type Boneco = {
   arquivo: string;
   nome: string;
-  /** Foto do card na grade. */
+  /** Render do card na grade (PNG/WebP com fundo transparente). */
   foto: string;
   /** Imagem ampliada ao clicar: a arte em alta (SVG/PNG) ou, sem ela, a foto. */
   detalhe: string;
@@ -60,10 +60,12 @@ export default function BonecosGaleria({ bonecos }: { bonecos: Boneco[] }) {
                 <img
                   src={boneco.foto}
                   alt={`Bonequinho Futi ${boneco.nome}`}
-                  width={1000}
-                  height={1250}
+                  width={640}
+                  height={700}
                   loading="lazy"
-                  className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  // Pés alinhados na base: os renders têm a mesma largura, e o
+                  // que muda de um para outro é a altura do cabelo.
+                  className="aspect-[4/5] w-full object-contain object-bottom px-5 pb-12 pt-6 transition-transform duration-500 group-hover:scale-110"
                 />
                 {boneco.arquivo === "dourado" && (
                   <span
@@ -95,7 +97,7 @@ export default function BonecosGaleria({ bonecos }: { bonecos: Boneco[] }) {
       >
         {atual && (
           <figure className="relative">
-            <div className="flex items-center justify-center rounded-3xl bg-[#FFFFFF] p-4 shadow-2xl sm:p-8">
+            <div className="flex items-center justify-center rounded-3xl bg-white p-4 shadow-2xl sm:p-8">
               <img
                 key={atual.detalhe}
                 src={atual.detalhe}

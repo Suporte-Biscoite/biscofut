@@ -29,10 +29,10 @@ const BANNERS: Record<
   { src: string; alt: string; frase: string; focal?: string; textoADireita?: boolean }
 > = {
   "futi-collection": {
-    src: "/images/collection/web/bonecos-no-campo-2.jpg",
-    alt: "Bonequinhos Futi comemorando no gramado de um estádio lotado",
+    src: "/images/collection/web/bonecos-no-campo-1.jpg",
+    alt: "Dois bonequinhos Futi disputando a bola no gramado de um estádio",
     frase: "6 bonequinhos para colecionar",
-    focal: "40% 60%",
+    focal: "50% 60%",
   },
   "futi-arena": {
     src: "/images/arena/web/futi-arena.jpg",
