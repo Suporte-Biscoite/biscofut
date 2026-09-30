@@ -6,8 +6,8 @@ import { campaign } from "@/lib/campaign";
  * Chamada para a área "Meus números".
  *
  * A participação não passa mais por cadastro de nota fiscal: a compra feita
- * com CPF no PDV da loja chega pela integração com a Nexaas (ver
- * app/api/webhooks/nexaas) e gera os números direto no CPF do comprador.
+ * com CPF no PDV da loja é lida pela API da IOTA (lib/sincronizacao.ts) e
+ * gera os números direto no CPF do comprador.
  * O que o consumidor precisa fazer no site é só cadastrar o CPF em
  * "Meus números" para acompanhar esses números.
  */

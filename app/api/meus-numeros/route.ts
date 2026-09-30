@@ -1,21 +1,23 @@
 import { NextResponse } from "next/server";
-import { campaign } from "@/lib/campaign";
 import { isValidCPF, onlyDigits } from "@/lib/masks";
 import { verificarSenha } from "@/lib/senha";
+import { sincronizarPedidos } from "@/lib/sincronizacao";
 import { buscarParticipante } from "@/lib/store";
+import { respostaComNumeros } from "./resposta";
 
 /**
  * Login em /meus-numeros: CPF + senha.
  *
- * A senha é criada no primeiro acesso, em /api/meus-numeros/senha, depois de
- * confirmar CPF + e-mail — ver o comentário lá para o porquê. A partir daí,
- * CPF sozinho (que pode vazar ou ser adivinhado) não abre mais os números de
- * ninguém: só quem sabe a senha.
+ * A senha é criada no cadastro (/api/meus-numeros/cadastro). CPF sozinho
+ * (que pode vazar ou ser adivinhado) não abre os números de ninguém.
  *
- * Mensagem de erro sempre igual — CPF inexistente, senha errada ou senha
- * ainda não criada — para não revelar qual dos três é o caso.
+ * A cada login, antes de responder, busca na IOTA as compras novas do CPF
+ * e emite os números delas (lib/sincronizacao.ts).
+ *
+ * Mensagem de erro sempre igual — CPF sem cadastro ou senha errada — para
+ * não revelar qual dos dois é o caso.
  */
-const MENSAGEM_ERRO = "CPF ou senha incorretos, ou senha ainda não criada.";
+const MENSAGEM_ERRO = "CPF ou senha incorretos. Ainda não se cadastrou? Use a opção \"Cadastrar\".";
 
 export async function POST(request: Request) {
   let body: { cpf?: string; senha?: string };
@@ -39,15 +41,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, mensagem: MENSAGEM_ERRO }, { status: 401 });
   }
 
-  return NextResponse.json({
-    ok: true,
-    nome: participante.nome,
-    acumulado: participante.numeros.length,
-    limite: campaign.regras.maxNumerosPorCpf,
-    numeros: participante.numeros.map((n) => ({
-      numero: n.numero,
-      origem: n.origem,
-      emitidoEm: n.emitidoEm,
-    })),
-  });
+  const sincronizacao = await sincronizarPedidos(cpf);
+  const atualizado = await buscarParticipante(cpf);
+  return respostaComNumeros(atualizado!, sincronizacao);
 }

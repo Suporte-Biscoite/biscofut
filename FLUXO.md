@@ -7,6 +7,13 @@ descrição detalhada do fluxo de cadastro e validação na Landing Page** e
 **print/descrição visual da mesma**. Este arquivo é a fonte para essa parte da
 documentação: o que está aqui descreve exatamente o que o código faz.
 
+> **Mudança de mecânica (29/09/2026).** O cadastro de nota fiscal saiu. A
+> participação agora é só por CPF: o cliente informa o CPF no caixa, se
+> cadastra uma vez em `/meus-numeros` e os números das compras chegam pela
+> API da IOTA — ver **§3.5**, que é a descrição vigente. As seções 1 a 3 e 5
+> ainda descrevem o fluxo antigo de nota fiscal e precisam ser reescritas
+> antes do protocolo.
+
 ---
 
 ## 1. Arquitetura em uma tela
@@ -161,54 +168,60 @@ números que não vieram.
 
 ---
 
-## 3.5. Canal 2 — compra na loja, via webhook da Nexaas
+## 3.5. Participação por CPF — compra na loja, lida pela API da IOTA
 
-Além do cadastro manual de nota fiscal (canal 1, acima), a campanha também
-gera números da sorte automaticamente quando a pessoa compra os produtos
-participantes direto na loja (Nexaas). Não há formulário nesse canal: a
-Nexaas nos avisa do pedido pago, e o participante consulta o resultado
-depois em `/meus-numeros`, com CPF + e-mail.
+A compra acontece no PDV da loja (Nexaas). A IOTA expõe os pedidos de cada
+CPF numa API, e o site busca esses pedidos quando o participante entra em
+`/meus-numeros`. Não há formulário de compra.
 
 ```
-Nexaas (pedido pago) ──POST──> /api/webhooks/nexaas ──> lib/store.ts
-                                                              │
-Participante ──CPF + e-mail──> /api/meus-numeros ────────────┘
+Caixa da loja (CPF na compra) ──> PDV Nexaas ──> API da IOTA
+                                                     │  GET get-customer-orders/{cpf}
+Participante ──cadastro / login──> /api/meus-numeros ┘──> lib/sincronizacao.ts ──> Postgres
 ```
 
-**⚠️ Contrato do webhook ainda não confirmado com a Nexaas.** O formato do
-payload, o nome do evento de "pedido pago" e o header de assinatura em
-`lib/nexaas.ts` são uma suposição razoável (padrão de e-commerce), só para
-destravar o resto do fluxo. Antes de ligar de verdade:
+1. **Cadastro** (`/api/meus-numeros/cadastro`): nome, CPF, nascimento
+   (18+), e-mail, celular, senha e aceite do regulamento + política
+   (obrigatório) e de comunicações (opcional). Um CPF se cadastra uma vez só
+   (`cadastrarParticipante` em `lib/store.ts`). A API da IOTA só devolve CPF
+   e nome — sem e-mail —, então não há dado da compra para conferir quem se
+   cadastra: o CPF é o identificador, e o prêmio só é entregue ao titular,
+   com documento.
+2. **Sincronização** (`lib/sincronizacao.ts`), no cadastro e em cada login:
+   busca os pedidos do CPF (`lib/iota.ts`), descarta os de fora da vigência
+   (pela data local da compra), traduz os SKUs do PDV para os produtos
+   participantes (variável `IOTA_SKUS`) e emite os números de cada pedido
+   ainda não processado, em ordem de compra — se o teto de 200 cortar, corta
+   as compras mais novas. Pedido já processado não gera de novo (PK em
+   `pedidos`).
+3. **IOTA fora do ar**: o login funciona e mostra os números que já estão no
+   banco, com um aviso; as compras novas entram no próximo login.
+4. **Antes do CA**: cadastro e emissão recusados (só liberados em
+   `next dev`, para testar).
 
-1. Confirmar com a Nexaas: nome do evento, formato exato do JSON, nome e
-   algoritmo do header de assinatura.
-2. Ajustar `NexaasWebhookEvent` e a leitura do payload em
-   `app/api/webhooks/nexaas/route.ts`.
-3. Preencher `NEXAAS_SKU_PARA_PRODUTO` (`lib/nexaas.ts`) com os SKUs reais
-   cadastrados na loja — hoje são placeholders iguais aos nossos próprios
-   SKUs (`FUTI-CARD`, `FUTI-COL`, `FUTI-ARE`).
-4. Configurar a variável de ambiente `NEXAAS_WEBHOOK_SECRET` (sem ela, o
-   endpoint recusa qualquer webhook em produção — de propósito, para nunca
-   aceitar um payload não verificado por engano).
+**Variáveis de ambiente** (Vercel):
 
-**Login em `/meus-numeros` é por CPF + senha** (`app/api/meus-numeros/route.ts`),
-não CPF + e-mail — CPF sozinho pode vazar ou ser adivinhado, e antes disso
-qualquer pessoa que soubesse CPF e e-mail de alguém (dado bem menos secreto
-do que se gostaria) via quantos números aquele CPF tinha. Como nenhum
-cadastro anterior (nota fiscal ou pedido Nexaas) coleta senha, o primeiro
-acesso é uma etapa própria — `app/api/meus-numeros/senha/route.ts` — que
-confirma CPF + e-mail da compra (a mesma verificação que valia antes) e só
-então define a senha, uma única vez por CPF (`definirSenha` em
-`lib/store.ts` recusa redefinir se já existe hash). Senha é hasheada com
-scrypt em `lib/senha.ts`, sem dependência nova. Não há fluxo de "esqueci
-minha senha" ainda — depende de e-mail transacional, ver §6.2. A mensagem
-de erro é sempre a mesma (CPF, senha ou combinação inexistente), para não
-vazar se um CPF já participou.
+| Variável | Valor |
+| --- | --- |
+| `IOTA_API_KEY` | `X-API-Key` enviado pela IOTA |
+| `IOTA_API_TOKEN` | `X-API-Token` enviado pela IOTA |
+| `IOTA_SKUS` | `sku:PRODUTO` separados por vírgula, ex. `4001234:FUTI-CARD,4001235:FUTI-COL,4001236:FUTI-ARE` |
+| `IOTA_CAMPAIGN` | opcional, padrão `NEYMARJR` |
+| `IOTA_API_URL` | opcional, padrão `https://api.hub.iotaapp.com.br/provider/biscoite/campaigns` |
 
-**Cada compra gera números conforme o produto**, usando os mesmos pesos do
-canal manual (`lib/numeroDaSorte.ts`): Futi Card = 1, Futi Collection
-(Bonequinho) = 6, Futi Arena (Campo) = 25. Comprar Card + Arena na mesma
-compra gera 1 + 25 = 26 números, todos no mesmo CPF.
+**Formato da resposta** (conferido em 29/09/2026): `ordersData.customer`
+(`document`, `name`, `id`) e `ordersData.orders[]` (`id`,
+`salesChannelName`, `createdAt` com fuso, `items[]` com `sku`, `name`,
+`quantity`). Não vem status do pedido — cancelamento e estorno ainda não
+são tratados. CPF sem compras volta 200 com a lista vazia.
+
+**Números por produto** (`lib/numeroDaSorte.ts`): Futi Card = 1, Futi
+Collection = 6, Futi Arena = 25. Card + Arena na mesma compra = 26 números.
+
+**Login** é por CPF + senha (`app/api/meus-numeros/route.ts`), com a mesma
+mensagem de erro para CPF sem cadastro e senha errada. Senha com scrypt em
+`lib/senha.ts`. Não há "esqueci minha senha" ainda — depende de e-mail
+transacional, ver §6.2.
 
 ---
 
@@ -303,7 +316,7 @@ que não há mais formulário de cadastro de nota.
 | CAPTCHA | contra automação em massa, principalmente em `/api/meus-numeros/senha` |
 | E-mail transacional | confirmação com os números emitidos; e viabiliza um fluxo de "esqueci minha senha" em `/meus-numeros`, que hoje não existe |
 | Área do participante | `/meus-numeros`, com login por CPF + senha (§3.5), lendo do banco |
-| Webhook Nexaas | contrato ainda não confirmado com a Nexaas — ver §3.5 |
+| API da IOTA | SKUs reais dos produtos Futi (`IOTA_SKUS`) e tratamento de cancelamento/estorno — ver §3.5 |
 | Apuração | entrada dos resultados oficiais da Loteria Federal |
 | `robots: index` | hoje `noindex` em `app/layout.tsx` — liberar na publicação |
 | Aviso de cookies | se houver medição de audiência |
@@ -340,9 +353,6 @@ que não há mais formulário de cadastro de nota.
 - [ ] `NEXT_PUBLIC_PROMO_STATUS=ACTIVE`
 - [ ] Verificar que o CA aparece na seção "Documentos oficiais" e no rodapé
 - [ ] `robots: index` liberado
-- [ ] Teste de ponta a ponta com nota fiscal real
-- [ ] Confirmar com a Nexaas o contrato do webhook e ajustar `lib/nexaas.ts`
-      (§3.5)
-- [ ] Preencher `NEXAAS_SKU_PARA_PRODUTO` com os SKUs reais da loja
-- [ ] Configurar `NEXAAS_WEBHOOK_SECRET` no ambiente de produção
+- [ ] `IOTA_API_KEY`, `IOTA_API_TOKEN` e `IOTA_SKUS` configuradas em produção
+      (§3.5), com chave e token novos (os atuais circularam no WhatsApp)
 - [ ] Teste de ponta a ponta com um pedido real na loja

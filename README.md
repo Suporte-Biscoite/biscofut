@@ -154,5 +154,5 @@ que não constitui oferta. Vira prêmio de verdade com uma linha:
 O banco está ligado (`lib/db.ts` e `lib/store.ts`), com as garantias que o
 protocolo exige feitas pelo próprio Postgres: pedido processado uma vez só,
 número da sorte com um dono só e teto por CPF conferido em transação. O que
-falta — contrato real da Nexaas, rate limiting, apuração — está em
+falta — SKUs reais dos produtos na IOTA, rate limiting, apuração — está em
 [FLUXO.md §6](./FLUXO.md).

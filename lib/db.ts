@@ -95,6 +95,18 @@ CREATE TABLE IF NOT EXISTS numeros (
 );
 
 CREATE INDEX IF NOT EXISTS numeros_cpf_idx ON numeros (cpf);
+
+-- Cadastro em /meus-numeros (a compra no PDV só traz CPF e nome).
+ALTER TABLE participantes ADD COLUMN IF NOT EXISTS telefone TEXT;
+ALTER TABLE participantes ADD COLUMN IF NOT EXISTS nascimento DATE;
+ALTER TABLE participantes ADD COLUMN IF NOT EXISTS cadastrado_em TIMESTAMPTZ;
+-- Momento em que aceitou regulamento + política (os dois são obrigatórios).
+ALTER TABLE participantes ADD COLUMN IF NOT EXISTS aceitou_documentos_em TIMESTAMPTZ;
+ALTER TABLE participantes ADD COLUMN IF NOT EXISTS aceita_comunicacoes BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Dados da compra vindos da IOTA, para auditoria.
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS loja TEXT;
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comprado_em TIMESTAMPTZ;
 `;
 
 async function criarSchema(): Promise<void> {

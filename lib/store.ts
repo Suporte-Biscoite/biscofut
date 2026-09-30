@@ -1,9 +1,9 @@
 /**
  * Registro de participantes e números da sorte, no Postgres (lib/db.ts).
  *
- * A única entrada é o webhook de pedidos da Nexaas (app/api/webhooks/nexaas):
- * cada compra com CPF soma números ao participante daquele CPF, até o teto
- * de 200 números do regulamento (cláusula 6.3) em toda a promoção.
+ * O participante se cadastra em /meus-numeros; as compras chegam da API da
+ * IOTA (lib/sincronizacao.ts) e cada uma soma números ao CPF, até o teto de
+ * 200 números do regulamento (cláusula 6.3) em toda a promoção.
  *
  * As três garantias que o protocolo exige ficam no banco, não no código:
  *   - o mesmo pedido nunca gera números duas vezes (PK em pedidos);
@@ -16,12 +16,13 @@ import { query, transacao, TAMANHO_SERIE } from "./db";
 import { aplicarTeto, formatNumeroDaSorte } from "./numeroDaSorte";
 import { hashSenha } from "./senha";
 
-export type OrigemNumero = "nexaas";
+/** Compra no PDV das lojas (Nexaas, lida pela API da IOTA). */
+export type OrigemNumero = "loja";
 
 export type NumeroEmitido = {
   numero: string;
   origem: OrigemNumero;
-  /** Id do pedido na Nexaas. */
+  /** Id do pedido no PDV. */
   referencia: string;
   emitidoEm: string;
 };
@@ -74,17 +75,42 @@ export async function buscarParticipante(cpf: string): Promise<Participante | un
 }
 
 /**
- * Define a senha de um participante que ainda não tem uma — é o "primeiro
- * acesso" de /meus-numeros, feito depois de confirmar CPF + e-mail. O
- * `senha_hash IS NULL` no próprio UPDATE impede que dois primeiros acessos
- * simultâneos troquem a senha um do outro. Devolve false se o participante
- * não existe ou já tem senha.
+ * Cadastro em /meus-numeros. Um CPF só se cadastra uma vez: se a linha já
+ * existe com senha, não faz nada e devolve false. Se existe sem senha (o
+ * participante de teste, por exemplo), completa os dados. O
+ * `WHERE senha_hash IS NULL` no próprio upsert impede que dois cadastros
+ * simultâneos do mesmo CPF passem os dois.
  */
-export async function definirSenha(cpf: string, senhaHash: string): Promise<boolean> {
+export async function cadastrarParticipante(dados: {
+  cpf: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  nascimento: string;
+  senhaHash: string;
+  aceitaComunicacoes: boolean;
+}): Promise<boolean> {
   const linhas = await query<{ cpf: string }>(
-    `UPDATE participantes SET senha_hash = $2, atualizado_em = now()
-     WHERE cpf = $1 AND senha_hash IS NULL RETURNING cpf`,
-    [cpf, senhaHash]
+    `INSERT INTO participantes
+       (cpf, nome, email, telefone, nascimento, senha_hash, cadastrado_em,
+        aceitou_documentos_em, aceita_comunicacoes)
+     VALUES ($1, $2, $3, $4, $5, $6, now(), now(), $7)
+     ON CONFLICT (cpf) DO UPDATE SET
+       nome = EXCLUDED.nome, email = EXCLUDED.email, telefone = EXCLUDED.telefone,
+       nascimento = EXCLUDED.nascimento, senha_hash = EXCLUDED.senha_hash,
+       cadastrado_em = now(), aceitou_documentos_em = now(),
+       aceita_comunicacoes = EXCLUDED.aceita_comunicacoes, atualizado_em = now()
+     WHERE participantes.senha_hash IS NULL
+     RETURNING cpf`,
+    [
+      dados.cpf,
+      dados.nome,
+      dados.email.trim().toLowerCase(),
+      dados.telefone,
+      dados.nascimento,
+      dados.senhaHash,
+      dados.aceitaComunicacoes,
+    ]
   );
   return linhas.length === 1;
 }
@@ -113,9 +139,11 @@ export async function emitirNumerosDoPedido(params: {
   email?: string | null;
   origem: OrigemNumero;
   referencia: string;
+  loja?: string | null;
+  compradoEm?: string | null;
   solicitados: number;
 }): Promise<ResultadoEmissao> {
-  const { cpf, nome, email, origem, referencia, solicitados } = params;
+  const { cpf, nome, email, origem, referencia, loja, compradoEm, solicitados } = params;
 
   return transacao(async (client) => {
     // O upsert trava a linha do participante até o fim da transação.
@@ -129,9 +157,9 @@ export async function emitirNumerosDoPedido(params: {
     );
 
     const pedido = await client.query(
-      `INSERT INTO pedidos (origem, referencia, cpf, numeros_solicitados)
-       VALUES ($1, $2, $3, $4) ON CONFLICT (origem, referencia) DO NOTHING`,
-      [origem, referencia, cpf, solicitados]
+      `INSERT INTO pedidos (origem, referencia, cpf, numeros_solicitados, loja, comprado_em)
+       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (origem, referencia) DO NOTHING`,
+      [origem, referencia, cpf, solicitados, loja ?? null, compradoEm ?? null]
     );
     if (pedido.rowCount === 0) return { status: "ja-processado" as const };
 
@@ -182,7 +210,7 @@ export async function emitirNumerosDoPedido(params: {
 
 /**
  * Participante de teste, só em `next dev`: já nasce com senha e números para
- * dar para entrar em /meus-numeros sem simular um pedido antes. É idempotente
+ * dar para entrar em /meus-numeros sem ter compra de verdade. É idempotente
  * (o pedido "seed-dev" só é processado uma vez) e nunca roda em produção.
  *
  *   CPF:    529.982.247-25
@@ -198,13 +226,19 @@ function garantirParticipanteTeste(): Promise<void> {
   globalSeed.__campanhaSeed ??= (async () => {
     await emitirNumerosDoPedido({
       cpf: CPF_TESTE,
-      nome: "Participante Teste",
-      email: "teste@biscoite.com.br",
-      origem: "nexaas",
+      origem: "loja",
       referencia: "seed-dev",
       solicitados: 3,
     });
-    await definirSenha(CPF_TESTE, hashSenha("teste123"));
+    await cadastrarParticipante({
+      cpf: CPF_TESTE,
+      nome: "Participante Teste",
+      email: "teste@biscoite.com.br",
+      telefone: "11999999999",
+      nascimento: "1990-01-01",
+      senhaHash: hashSenha("teste123"),
+      aceitaComunicacoes: false,
+    });
   })().catch((erro) => {
     globalSeed.__campanhaSeed = undefined;
     throw erro;
