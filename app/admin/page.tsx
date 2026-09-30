@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import BrandLockup from "@/components/BrandLockup";
 import { Field, Input } from "@/components/ui/Field";
+import { campaign } from "@/lib/campaign";
 import { formatCPF, formatPhone } from "@/lib/masks";
 
 /**
@@ -45,6 +46,13 @@ async function chamar<T>(url: string, init?: RequestInit): Promise<{ ok: boolean
   } catch {
     return { ok: false, mensagem: "Falha de conexão." } as { ok: boolean; mensagem?: string } & T;
   }
+}
+
+/** Data de apuração do regulamento mais recente até hoje (ou a primeira). */
+function sorteioMaisRecente(): string {
+  const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  const passadas = campaign.apuracao.datas.filter((d) => d <= hoje);
+  return passadas[passadas.length - 1] ?? campaign.apuracao.datas[0];
 }
 
 const data = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "—");
@@ -160,6 +168,9 @@ function Erro({ children }: { children: ReactNode }) {
 }
 
 function Apuracao({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
+  const [dataSorteio, setDataSorteio] = useState(sorteioMaisRecente);
+  const [concurso, setConcurso] = useState("");
+  const [buscando, setBuscando] = useState(false);
   const [serie, setSerie] = useState("");
   const [premios, setPremios] = useState(["", "", "", "", ""]);
   const [erro, setErro] = useState("");
@@ -170,6 +181,21 @@ function Apuracao({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
     ganhadores: Ganhador[];
     incompleto: boolean;
   } | null>(null);
+
+  async function buscarNaCaixa() {
+    setBuscando(true);
+    setErro("");
+    setConcurso("");
+    const r = await chamar<{ resultado: { concurso: number; data: string; premios: string[] } }>(
+      `/api/admin/loteria?data=${dataSorteio}`
+    );
+    setBuscando(false);
+    if (r.ok) {
+      setPremios(r.resultado.premios);
+      setConcurso(`Concurso ${r.resultado.concurso} da Loteria Federal, de ${nascimento(r.resultado.data)} — confira com o site da Caixa.`);
+    } else if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
+    else setErro(r.mensagem ?? "Não foi possível buscar na Caixa.");
+  }
 
   async function apurar(e: FormEvent) {
     e.preventDefault();
@@ -189,10 +215,29 @@ function Apuracao({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
     <section className="mt-8">
       <form onSubmit={apurar} className="card space-y-5 p-6 sm:p-8" noValidate>
         <p className="text-sm leading-relaxed text-ink/70">
-          Informe os 5 prêmios da extração da Loteria Federal (como aparecem no site da Caixa) e a
+          Escolha a data do sorteio e busque os 5 prêmios na Caixa (ou digite à mão) e informe a
           série contemplada, conforme a regra do regulamento. A busca segue a cláusula 7: 1º e 2º
           prêmios, depois 3º a 5º e, faltando ganhador, a aproximação superior ao 1º prêmio.
         </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <Field id="data-sorteio" label="Data do sorteio">
+            <Input
+              id="data-sorteio"
+              type="date"
+              value={dataSorteio}
+              onChange={(e) => setDataSorteio(e.target.value)}
+              className="max-w-[12rem]"
+            />
+          </Field>
+          <button type="button" onClick={buscarNaCaixa} disabled={buscando || !dataSorteio} className="btn-secondary">
+            {buscando ? "Buscando…" : "Buscar na Caixa"}
+          </button>
+        </div>
+        {concurso && (
+          <p role="status" className="rounded-xl bg-sky/15 px-4 py-3 text-sm text-ink/80">
+            {concurso}
+          </p>
+        )}
         <Field id="serie-apuracao" label="Série contemplada (0 a 9)">
           <Input
             id="serie-apuracao"
