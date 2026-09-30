@@ -205,7 +205,7 @@ Participante ──cadastro / login──> /api/meus-numeros ┘──> lib/sinc
 | --- | --- |
 | `IOTA_API_KEY` | `X-API-Key` enviado pela IOTA |
 | `IOTA_API_TOKEN` | `X-API-Token` enviado pela IOTA |
-| `IOTA_SKUS` | `sku:PRODUTO` separados por vírgula, ex. `4001234:FUTI-CARD,4001235:FUTI-COL,4001236:FUTI-ARE` |
+| `IOTA_SKUS` | opcional — substitui os SKUs padrão do código (Card 4001292, Collection 4001293, Arena 4001261); formato `4001292:FUTI-CARD,4001293:FUTI-COL,4001261:FUTI-ARE` |
 | `IOTA_CAMPAIGN` | opcional, padrão `NEYMARJR` |
 | `IOTA_API_URL` | opcional, padrão `https://api.hub.iotaapp.com.br/provider/biscoite/campaigns` |
 
@@ -316,7 +316,7 @@ que não há mais formulário de cadastro de nota.
 | CAPTCHA | contra automação em massa, principalmente em `/api/meus-numeros/senha` |
 | E-mail transacional | confirmação com os números emitidos; e viabiliza um fluxo de "esqueci minha senha" em `/meus-numeros`, que hoje não existe |
 | Área do participante | `/meus-numeros`, com login por CPF + senha (§3.5), lendo do banco |
-| API da IOTA | SKUs reais dos produtos Futi (`IOTA_SKUS`) e tratamento de cancelamento/estorno — ver §3.5 |
+| API da IOTA | tratamento de cancelamento/estorno — ver §3.5 |
 | Apuração | entrada dos resultados oficiais da Loteria Federal |
 | `robots: index` | hoje `noindex` em `app/layout.tsx` — liberar na publicação |
 | Aviso de cookies | se houver medição de audiência |
@@ -353,6 +353,6 @@ que não há mais formulário de cadastro de nota.
 - [ ] `NEXT_PUBLIC_PROMO_STATUS=ACTIVE`
 - [ ] Verificar que o CA aparece na seção "Documentos oficiais" e no rodapé
 - [ ] `robots: index` liberado
-- [ ] `IOTA_API_KEY`, `IOTA_API_TOKEN` e `IOTA_SKUS` configuradas em produção
+- [ ] `IOTA_API_KEY` e `IOTA_API_TOKEN` configuradas em produção
       (§3.5), com chave e token novos (os atuais circularam no WhatsApp)
 - [ ] Teste de ponta a ponta com um pedido real na loja

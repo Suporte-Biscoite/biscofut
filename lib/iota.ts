@@ -21,16 +21,23 @@ const TIMEOUT_MS = 10_000;
 
 /**
  * De: SKU do produto no PDV. Para: SKU usado em produtosElegiveis
- * (lib/numeroDaSorte.ts). Vem da variável IOTA_SKUS, no formato
- * `4001234:FUTI-CARD,4001235:FUTI-COL,4001236:FUTI-ARE` — dá para cadastrar
- * um SKU novo (outra embalagem, outra loja) sem mexer no código.
+ * (lib/numeroDaSorte.ts). SKUs confirmados em 29/09/2026.
  *
- * ⚠️ Enquanto a IOTA/comercial não confirmar os SKUs reais, a variável fica
- * vazia e nenhuma compra gera número.
+ * A variável IOTA_SKUS, se preenchida, substitui esta lista — formato
+ * `4001292:FUTI-CARD,4001293:FUTI-COL,4001261:FUTI-ARE`. Serve para
+ * cadastrar um SKU novo (outra embalagem, por exemplo) sem mexer no código.
  */
+const SKUS_PADRAO: Record<string, string> = {
+  "4001292": "FUTI-CARD",
+  "4001293": "FUTI-COL",
+  "4001261": "FUTI-ARE",
+};
+
 export function skuParaProduto(): Record<string, string> {
+  const variavel = (process.env.IOTA_SKUS ?? "").trim();
+  if (!variavel) return SKUS_PADRAO;
   return Object.fromEntries(
-    (process.env.IOTA_SKUS ?? "")
+    variavel
       .split(",")
       .map((par) => par.split(":").map((parte) => parte.trim()))
       .filter(([sku, produto]) => sku && produto)
