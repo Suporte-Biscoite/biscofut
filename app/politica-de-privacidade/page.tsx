@@ -144,6 +144,7 @@ export default function PoliticaDePrivacidade() {
           items={[
             "Tráfego cifrado em HTTPS em todo o site.",
             "Acesso aos dados restrito a pessoas autorizadas, com registro de acesso.",
+            "Para proteger as contas contra tentativas automáticas de acesso, registramos por até 24 horas uma versão codificada e irreversível do endereço IP de quem tenta entrar ou se cadastrar.",
             "Nenhum dado sensível de pagamento é coletado — a promoção não processa pagamentos.",
           ]}
         />
