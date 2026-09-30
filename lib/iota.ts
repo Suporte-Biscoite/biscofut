@@ -14,7 +14,7 @@
  *     orders: [{ id, status, salesChannelName, createdAt, items: [{ sku, name, quantity }] }] } }
  *
  * Não vem e-mail nem telefone. O `status` foi incluído pela IOTA em
- * 30/09/2026 (até agora só apareceu "delivered").
+ * 30/09/2026 — ver situacaoDoPedido abaixo.
  */
 
 const URL_PADRAO = "https://api.hub.iotaapp.com.br/provider/biscoite/campaigns";
@@ -46,21 +46,54 @@ export function skuParaProduto(): Record<string, string> {
 }
 
 /**
- * O que fazer com o pedido conforme o status. ⚠️ Lista montada com o único
- * valor visto até agora ("delivered") e os nomes usuais — confirmar com a
- * IOTA a lista completa. Status fora das duas listas não gera número e vai
- * para o log; quando for incluído aqui, a próxima sincronização emite.
+ * O que fazer com o pedido conforme o status — lista oficial enviada pela
+ * IOTA em 30/09/2026.
+ *
+ * - valido: venda finalizada, gera números. A venda de loja já chega como
+ *   "delivered"; no e-commerce, esperar a entrega evita dar número para
+ *   compra que ainda pode ser cancelada.
+ * - cancelado: anula os números que o pedido tiver gerado.
+ * - pendente: ainda em andamento (faturado, em separação, em rota,
+ *   cancelamento ou devolução pendente…). Não gera nem anula; o pedido é
+ *   reavaliado a cada sincronização até chegar num estado final.
+ *   "partially_cancelled" fica aqui porque a API não diz quais itens saíram.
+ * - desconhecido: fora da lista oficial — tratado como pendente, com aviso no
+ *   log para ser classificado aqui.
  */
-const STATUS_VALIDOS = new Set(["delivered", "invoiced", "paid", "approved", "completed", "finished"]);
-const STATUS_CANCELADOS = new Set(["canceled", "cancelled", "refunded", "returned", "voided", "chargeback"]);
+const STATUS_VALIDOS = new Set(["delivered", "delivered_waiting_stock", "rejected_return"]);
+const STATUS_CANCELADOS = new Set(["cancelled", "full_return", "send_returned", "accepted_return"]);
+const STATUS_PENDENTES = new Set([
+  "new",
+  "processing_nfe",
+  "nfe_issued",
+  "waiting_picking",
+  "pre_order",
+  "picked",
+  "packed",
+  "pack_label_generated",
+  "separated",
+  "transporting",
+  "delivery_route",
+  "waiting_withdrawal",
+  "waiting_stock",
+  "canceling_nfe",
+  "pending_cancel",
+  "pending_return",
+  "pending_return_invoice",
+  "partially_cancelled",
+  "problem_reported",
+  "invoice_error",
+  "delivery_problem",
+]);
 
-export type SituacaoPedido = "valido" | "cancelado" | "desconhecido";
+export type SituacaoPedido = "valido" | "cancelado" | "pendente" | "desconhecido";
 
 export function situacaoDoPedido(status: string | null): SituacaoPedido {
-  // Sem status: a API antiga não mandava o campo e todos eram vendas feitas.
+  // Sem status: a API antiga não mandava o campo, e só listava vendas feitas.
   if (!status) return "valido";
   if (STATUS_VALIDOS.has(status)) return "valido";
   if (STATUS_CANCELADOS.has(status)) return "cancelado";
+  if (STATUS_PENDENTES.has(status)) return "pendente";
   return "desconhecido";
 }
 

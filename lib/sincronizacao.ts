@@ -69,8 +69,8 @@ export async function sincronizarPedidos(cpf: string): Promise<ResultadoSincroni
     }
     if (situacao === "desconhecido") {
       console.warn(`[sincronizacao] pedido ${pedido.id} com status desconhecido "${pedido.status}" — sem números até ser classificado em lib/iota.ts`);
-      continue;
     }
+    if (situacao === "pendente" || situacao === "desconhecido") continue;
 
     const solicitados = calcularNumeros(itensParticipantes(pedido, skus));
     if (solicitados === 0) continue;

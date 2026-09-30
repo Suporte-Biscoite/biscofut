@@ -215,12 +215,14 @@ Participante ──cadastro / login──> /api/meus-numeros ┘──> lib/sinc
 `quantity`) e, desde 30/09/2026, `status` (visto até agora: `delivered`).
 CPF sem compras volta 200 com a lista vazia.
 
-**Status do pedido** (`situacaoDoPedido` em `lib/iota.ts`): concluído
-(`delivered`, `invoiced`, `paid`…) gera números; cancelado/estornado
-(`canceled`, `refunded`, `returned`…) anula os números já emitidos —
+**Status do pedido** (`situacaoDoPedido` em `lib/iota.ts`, lista oficial da
+IOTA): `delivered`, `delivered_waiting_stock` e `rejected_return` geram
+números; `cancelled`, `full_return`, `send_returned` e `accepted_return`
+anulam os números já emitidos —
 pedido e números ficam no banco com `cancelado_em`/`anulado_em`, saem da
-conta do participante e do sorteio, e o número nunca volta para a fila;
-qualquer outro status não gera número e vai para o log até ser classificado.
+conta do participante e do sorteio, e o número nunca volta para a fila; os
+demais (faturado, em rota, cancelamento pendente, cancelamento parcial…)
+esperam um estado final; status fora da lista vai para o log.
 
 **Números por produto** (`lib/numeroDaSorte.ts`): Futi Card = 1, Futi
 Collection = 6, Futi Arena = 25. Card + Arena na mesma compra = 26 números.
@@ -329,7 +331,6 @@ que não há mais formulário de cadastro de nota.
 | CAPTCHA | contra automação em massa no cadastro, se o rate limiting não bastar |
 | E-mail transacional | **"esqueci minha senha" feito** (`/api/meus-numeros/esqueci` + `/meus-numeros/redefinir`, link de uso único válido por 1 h, via Resend — `RESEND_API_KEY`, `EMAIL_FROM`, `SITE_URL`). Falta: e-mail de confirmação com os números emitidos |
 | Área do participante | `/meus-numeros`, com login por CPF + senha (§3.5), lendo do banco |
-| API da IOTA | confirmar com a IOTA a lista completa de status (§3.5) |
 | Apuração | entrada dos resultados oficiais da Loteria Federal |
 | `robots: index` | automático: `app/layout.tsx` só libera o Google quando `transactionsAllowed()` |
 | Aviso de cookies | se houver medição de audiência |
