@@ -53,7 +53,7 @@ export const campaign = {
    * (assim consta no regulamento) — não é um valor separado.
    */
   vigencia: {
-    inicio: "2026-10-01" as string | null,
+    inicio: "2026-10-05" as string | null,
     fim: "2027-09-28" as string | null,
   },
 

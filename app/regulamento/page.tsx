@@ -136,7 +136,11 @@ export default function Regulamento() {
       </Clause>
 
       <Clause n="6" title="Quantidade de números da sorte">
-        <p>Os números da sorte serão compostos por 5 dígitos.</p>
+        <p>
+          Os números da sorte serão compostos por uma série, de 0 a 9, e um
+          número de 5 dígitos, de 00000 a 99999 — por exemplo, série 3, número
+          48213.
+        </p>
         <p>Serão distribuídos de forma aleatória e concomitante ao cadastro válido.</p>
         <p>
           O limite de números da sorte por participante será de{" "}

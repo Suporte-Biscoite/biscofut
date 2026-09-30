@@ -510,7 +510,11 @@ function ResultadoNumeros({ resultado }: { resultado: Resultado }) {
             key={n.numero}
             className="rounded-lg bg-navy px-3.5 py-2 font-mono text-sm font-black tracking-wider text-white"
           >
-            {n.numero}
+            {/* "3-48213": série 3, número 48213 (lib/numeroDaSorte.ts). */}
+            <span className="mr-1.5 text-[10px] font-medium uppercase tracking-label opacity-60">
+              série {n.numero.split("-")[0]}
+            </span>
+            {n.numero.split("-")[1]}
           </li>
         ))}
       </ul>

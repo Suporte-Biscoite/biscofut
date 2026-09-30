@@ -285,7 +285,7 @@ também cria o esquema sozinho na primeira requisição; operações em
 participantes(cpf PK, nome, email, senha_hash, criado_em, atualizado_em)
 pedidos(origem, referencia, cpf, numeros_solicitados, numeros_concedidos,
         recebido_em, PK (origem, referencia))
-pool_numeros(posicao PK, numero UNIQUE)   -- 00000–99999, embaralhados 1 vez
+pool_numeros(posicao PK, numero UNIQUE)   -- 10 séries × 00000–99999, embaralhados 1 vez
 contador_numeros(proximo)                 -- próxima posição livre da fila
 numeros(numero PK, cpf, origem, referencia, emitido_em)
 ```
@@ -302,6 +302,13 @@ As invariantes ficam no banco, não na aplicação:
 - **Distribuição aleatória** (regulamento, cláusula 6) — a série inteira é
   embaralhada na criação do banco e a ordem fica gravada em
   `pool_numeros`, auditável.
+- **Séries** — o número é série (0 a 9) + 5 dígitos, gravado como um
+  inteiro só (série × 100.000 + número) e exibido como `3-48213`. São 1
+  milhão de números para uma demanda máxima de 342.500 (100 mil Card × 1,
+  30 mil Collection × 6, 2.500 Arena × 25). `QUANTIDADE_SERIES` em
+  `lib/db.ts`; ao aumentar, a fila é refeita sozinha (ou, se já houver
+  números emitidos, só as posições livres são reembaralhadas). ⚠️ O
+  regulamento precisa definir qual série é contemplada em cada extração.
 
 Pendente: `consentimento` (aceites com IP, user-agent e versão do
 documento) — depende de onde o aceite do regulamento vai acontecer agora

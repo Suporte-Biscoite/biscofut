@@ -35,15 +35,24 @@ function pool(): Pool {
   return (g.__campanhaPool ??= criarPool());
 }
 
-/** Tamanho da série: 5 dígitos, 00000 a 99999 — regulamento, cláusula 6. */
+/**
+ * Números da sorte: série + número de 5 dígitos (regulamento, cláusula 6).
+ * Cada série vai de 00000 a 99999, o formato do prêmio da Loteria Federal.
+ * Com 10 séries (0 a 9) são 1 milhão de números — a demanda máxima prevista
+ * é de 342.500 (100 mil Card × 1, 30 mil Collection × 6, 2.500 Arena × 25).
+ *
+ * Internamente o número é um inteiro só: série × 100.000 + número.
+ */
 export const TAMANHO_SERIE = 100_000;
+export const QUANTIDADE_SERIES = 10;
+export const TOTAL_NUMEROS = TAMANHO_SERIE * QUANTIDADE_SERIES;
 
 /**
  * Esquema do banco. Idempotente, roda uma vez por instância antes da
  * primeira consulta — não há passo manual de migração.
  *
- * - `pool_numeros`: os 100 mil números da série, embaralhados uma única vez
- *   na criação do banco. A emissão pega as próximas posições da fila, o que
+ * - `pool_numeros`: todos os números de todas as séries, embaralhados uma
+ *   única vez na criação do banco. A emissão pega as próximas posições da fila, o que
  *   dá a distribuição aleatória que o regulamento exige sem nunca repetir
  *   número e sem sorteio a cada compra. A ordem fica gravada: dá para
  *   auditar depois qual número sairia em qual posição.
@@ -77,8 +86,11 @@ CREATE TABLE IF NOT EXISTS pedidos (
 
 CREATE TABLE IF NOT EXISTS pool_numeros (
   posicao INT PRIMARY KEY,
-  numero  INT NOT NULL UNIQUE CHECK (numero BETWEEN 0 AND ${TAMANHO_SERIE - 1})
+  numero  INT NOT NULL UNIQUE
 );
+-- A série única de 100 mil tinha CHECK até 99999; com séries, o limite é
+-- conferido na criação da fila (criarFila).
+ALTER TABLE pool_numeros DROP CONSTRAINT IF EXISTS pool_numeros_numero_check;
 
 CREATE TABLE IF NOT EXISTS contador_numeros (
   id      BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (id),
@@ -126,6 +138,50 @@ CREATE TABLE IF NOT EXISTS tentativas (
 CREATE INDEX IF NOT EXISTS tentativas_chave_idx ON tentativas (chave, criado_em);
 `;
 
+/**
+ * Garante que a fila embaralhada tem TOTAL_NUMEROS números.
+ *
+ * - Fila vazia (banco novo): embaralha tudo de uma vez.
+ * - Fila menor e nenhum número emitido (ex.: o banco nasceu com a série
+ *   única de 100 mil): refaz a fila inteira, para as séries novas entrarem
+ *   no mesmo sorteio de posições que as antigas.
+ * - Fila menor com números já emitidos: as posições já usadas (e os números
+ *   delas) não mudam — são auditáveis. As posições ainda livres são
+ *   reembaralhadas junto com os números novos, para as séries novas não
+ *   ficarem todas no fim da fila.
+ */
+async function criarFila(client: PoolClient): Promise<void> {
+  const { rows } = await client.query<{ total: string }>("SELECT count(*) AS total FROM pool_numeros");
+  const naFila = Number(rows[0].total);
+  if (naFila >= TOTAL_NUMEROS) return;
+
+  const { rows: emitidos } = await client.query<{ total: string }>("SELECT count(*) AS total FROM numeros");
+  if (Number(emitidos[0].total) === 0) {
+    await client.query("DELETE FROM pool_numeros");
+    await client.query(
+      `INSERT INTO pool_numeros (posicao, numero)
+       SELECT row_number() OVER (ORDER BY random()) - 1, n
+       FROM generate_series(0, ${TOTAL_NUMEROS - 1}) AS n`
+    );
+    await client.query("UPDATE contador_numeros SET proximo = 0");
+    return;
+  }
+
+  console.warn(`[db] fila com ${naFila} números e emissões já feitas: reembaralhando as posições livres.`);
+  const { rows: contador } = await client.query<{ proximo: number }>(
+    "SELECT proximo FROM contador_numeros FOR UPDATE"
+  );
+  const livreDesde = contador[0]?.proximo ?? 0;
+  await client.query("DELETE FROM pool_numeros WHERE posicao >= $1", [livreDesde]);
+  await client.query(
+    `INSERT INTO pool_numeros (posicao, numero)
+     SELECT $1 + row_number() OVER (ORDER BY random()) - 1, n
+     FROM generate_series(0, ${TOTAL_NUMEROS - 1}) AS n
+     WHERE NOT EXISTS (SELECT 1 FROM pool_numeros p WHERE p.numero = n)`,
+    [livreDesde]
+  );
+}
+
 async function criarSchema(): Promise<void> {
   const client = await pool().connect();
   try {
@@ -135,16 +191,7 @@ async function criarSchema(): Promise<void> {
     await client.query("SELECT pg_advisory_xact_lock(hashtext('campanha_schema'))");
     await client.query(SCHEMA);
 
-    const { rows } = await client.query<{ total: string }>(
-      "SELECT count(*) AS total FROM pool_numeros"
-    );
-    if (Number(rows[0].total) === 0) {
-      await client.query(
-        `INSERT INTO pool_numeros (posicao, numero)
-         SELECT row_number() OVER (ORDER BY random()) - 1, n
-         FROM generate_series(0, ${TAMANHO_SERIE - 1}) AS n`
-      );
-    }
+    await criarFila(client);
     await client.query(
       "INSERT INTO contador_numeros (id, proximo) VALUES (TRUE, 0) ON CONFLICT (id) DO NOTHING"
     );

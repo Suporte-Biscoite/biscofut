@@ -13,7 +13,7 @@
  */
 
 import { createHash, randomBytes } from "crypto";
-import { query, transacao, TAMANHO_SERIE } from "./db";
+import { query, transacao, TOTAL_NUMEROS } from "./db";
 import { aplicarTeto, formatNumeroDaSorte } from "./numeroDaSorte";
 import { hashSenha } from "./senha";
 
@@ -180,8 +180,8 @@ export async function emitirNumerosDoPedido(params: {
         [concedidos]
       );
       const inicio = reserva[0].inicio;
-      if (inicio + concedidos > TAMANHO_SERIE) {
-        throw new Error("Série de números da sorte esgotada.");
+      if (inicio + concedidos > TOTAL_NUMEROS) {
+        throw new Error("Números da sorte esgotados em todas as séries.");
       }
 
       const { rows } = await client.query<LinhaNumero>(

@@ -100,17 +100,23 @@ export function aplicarTeto(
   };
 }
 
-/** Formato de exibição do número da sorte: 5 dígitos, com zeros à esquerda. */
-export function formatNumeroDaSorte(sequencial: number): string {
-  return String(sequencial).padStart(5, "0");
+/**
+ * Formato de exibição: série e número de 5 dígitos, com zeros à esquerda —
+ * ex.: 348213 vira "3-48213" (série 3, número 48213).
+ */
+export function formatNumeroDaSorte(valor: number): string {
+  const serie = Math.floor(valor / 100_000);
+  const numero = String(valor % 100_000).padStart(5, "0");
+  return `${serie}-${numero}`;
 }
 
 /**
  * Apuração — documentado aqui porque o fluxo precisa constar no protocolo.
  *
  * A cada sorteio mensal, a Loteria Federal sorteia 5 números de concurso —
- * cada um já no formato de 5 dígitos de um número da sorte, sem composição
- * ou derivação. Os 2 ganhadores do mês são os participantes cujo número da
+ * cada um já no formato dos 5 dígitos de um número da sorte, sem composição
+ * ou derivação. ⚠️ Com as séries (lib/db.ts), o regulamento precisa definir
+ * também qual série é contemplada em cada extração — regra do jurídico. Os 2 ganhadores do mês são os participantes cujo número da
  * sorte corresponde, nesta ordem, ao 1º e ao 2º número sorteado; se ninguém
  * possuir o número correspondente, o critério se estende ao 3º, 4º e 5º
  * números. Persistindo a ausência de contemplado para uma posição, aplica-se
