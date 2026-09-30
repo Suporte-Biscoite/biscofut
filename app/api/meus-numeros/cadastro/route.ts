@@ -8,6 +8,7 @@ import {
   isValidPhone,
   onlyDigits,
 } from "@/lib/masks";
+import { excedeuLimite, hashIp, ipDaRequisicao, MENSAGEM_LIMITE } from "@/lib/limite";
 import { hashSenha, senhaForte } from "@/lib/senha";
 import { participacaoLiberada, sincronizarPedidos } from "@/lib/sincronizacao";
 import { buscarParticipante, cadastrarParticipante } from "@/lib/store";
@@ -69,6 +70,12 @@ export async function POST(request: Request) {
       "Para participar, aceite o regulamento e a política de privacidade.");
   if (erro) {
     return NextResponse.json({ ok: false, mensagem: erro }, { status: 422 });
+  }
+
+  // Contra robô cadastrando CPFs em massa a partir da mesma conexão.
+  const ip = hashIp(ipDaRequisicao(request));
+  if (await excedeuLimite([{ chave: `cadastro:ip:${ip}`, maximo: 10, janelaMinutos: 60 }])) {
+    return NextResponse.json({ ok: false, mensagem: MENSAGEM_LIMITE }, { status: 429 });
   }
 
   const criado = await cadastrarParticipante({

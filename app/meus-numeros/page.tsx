@@ -42,7 +42,7 @@ type Resultado = {
   /** "indisponivel": a leitura das compras falhou — mostra o que já existe. */
   compras: "ok" | "bloqueada" | "indisponivel";
 };
-type Modo = "entrar" | "cadastrar";
+type Modo = "entrar" | "cadastrar" | "esqueci";
 
 function paraResultado(data: Resultado): Resultado {
   return {
@@ -84,7 +84,9 @@ export default function MeusNumeros() {
         <p className="mt-5 leading-relaxed text-ink/75">
           {modo === "entrar"
             ? "Informe seu CPF e a senha cadastrada para ver os números da sorte já emitidos."
-            : "Cadastre seu CPF uma vez. Depois disso, toda compra de produto participante feita com esse CPF gera números da sorte automaticamente."}
+            : modo === "esqueci"
+              ? "Informe seu CPF. Enviamos um link para criar uma nova senha no e-mail do cadastro."
+              : "Cadastre seu CPF uma vez. Depois disso, toda compra de produto participante feita com esse CPF gera números da sorte automaticamente."}
         </p>
 
         <div className="mt-7 inline-flex items-center gap-1 rounded-full border border-line bg-white p-1 text-xs">
@@ -106,11 +108,11 @@ export default function MeusNumeros() {
           ))}
         </div>
 
-        {modo === "entrar" ? (
-          <FormularioEntrar onSucesso={setResultado} />
-        ) : (
-          <FormularioCadastro onSucesso={setResultado} />
+        {modo === "entrar" && (
+          <FormularioEntrar onSucesso={setResultado} onEsqueci={() => setModo("esqueci")} />
         )}
+        {modo === "cadastrar" && <FormularioCadastro onSucesso={setResultado} />}
+        {modo === "esqueci" && <FormularioEsqueci onVoltar={() => setModo("entrar")} />}
 
         {resultado && <ResultadoNumeros resultado={resultado} />}
 
@@ -129,7 +131,13 @@ export default function MeusNumeros() {
   );
 }
 
-function FormularioEntrar({ onSucesso }: { onSucesso: (r: Resultado) => void }) {
+function FormularioEntrar({
+  onSucesso,
+  onEsqueci,
+}: {
+  onSucesso: (r: Resultado) => void;
+  onEsqueci: () => void;
+}) {
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
   const [erros, setErros] = useState<{ cpf?: string; senha?: string }>({});
@@ -205,9 +213,99 @@ function FormularioEntrar({ onSucesso }: { onSucesso: (r: Resultado) => void }) 
       <button type="submit" disabled={carregando} className="btn-primary w-full">
         {carregando ? "Entrando…" : "Entrar"}
       </button>
+
+      <button
+        type="button"
+        onClick={onEsqueci}
+        className="block w-full text-center text-xs font-black uppercase tracking-label text-steel transition-colors hover:text-navy"
+      >
+        Esqueci minha senha
+      </button>
     </form>
   );
 }
+
+function FormularioEsqueci({ onVoltar }: { onVoltar: () => void }) {
+  const [cpf, setCpf] = useState("");
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const [erroGeral, setErroGeral] = useState("");
+  const [enviado, setEnviado] = useState("");
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!isValidCPF(cpf)) {
+      setErro("CPF inválido.");
+      return;
+    }
+    setErro("");
+    setCarregando(true);
+    setErroGeral("");
+
+    try {
+      const response = await fetch("/api/meus-numeros/esqueci", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        setErroGeral(data.mensagem ?? "Não foi possível enviar o link agora.");
+        return;
+      }
+      setEnviado(data.mensagem);
+    } catch {
+      setErroGeral("Falha de conexão. Verifique sua internet e tente novamente.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="card mt-6 space-y-5 p-6 sm:p-8" noValidate>
+      {enviado ? (
+        <p role="status" className="rounded-xl bg-sky/15 px-5 py-4 text-sm leading-relaxed text-ink/80">
+          {enviado}
+        </p>
+      ) : (
+        <>
+          <Field id="cpf-esqueci" label="CPF" error={erro}>
+            <Input
+              id="cpf-esqueci"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={14}
+              value={cpf}
+              error={erro}
+              onChange={(e) => setCpf(formatCPF(e.target.value))}
+              placeholder="000.000.000-00"
+            />
+          </Field>
+
+          {erroGeral && (
+            <p role="alert" className="rounded-xl bg-alert/8 px-5 py-4 text-sm font-medium text-alert">
+              {erroGeral}
+            </p>
+          )}
+
+          <button type="submit" disabled={carregando} className="btn-primary w-full">
+            {carregando ? "Enviando…" : "Enviar link por e-mail"}
+          </button>
+        </>
+      )}
+
+      <button
+        type="button"
+        onClick={onVoltar}
+        className="block w-full text-center text-xs font-black uppercase tracking-label text-steel transition-colors hover:text-navy"
+      >
+        ← Voltar para o login
+      </button>
+    </form>
+  );
+}
+
 
 function FormularioCadastro({ onSucesso }: { onSucesso: (r: Resultado) => void }) {
   const [dados, setDados] = useState({

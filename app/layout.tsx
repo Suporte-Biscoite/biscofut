@@ -10,16 +10,18 @@ import "@fontsource/montserrat/500.css";
 import "@fontsource/montserrat/700.css";
 
 import "./globals.css";
+import { transactionsAllowed } from "@/lib/promoStatus";
 import { TEMA } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Concorra a uma camiseta autografada pelo Neymar Jr. | Promoção Futi",
   description:
     "Compre produtos Futi informando seu CPF e concorra a uma das 22 camisetas autografadas pelo Neymar Jr. Promoção comercial Biscoitê sujeita a autorização da SPA/MF.",
+  // Só aparece no Google com a promoção ativa (NEXT_PUBLIC_PROMO_STATUS=ACTIVE
+  // e CA preenchido) — a campanha não pode ser divulgada antes disso.
   robots: {
-    // A campanha não pode ser divulgada antes do CA — liberar na publicação.
-    index: false,
-    follow: false,
+    index: transactionsAllowed(),
+    follow: transactionsAllowed(),
   },
   // Ícone servido estático de public/, sem passar pelo otimizador de imagem
   // do Next — a convenção app/icon.png tentou reprocessar o PNG e travou.

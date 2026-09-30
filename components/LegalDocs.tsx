@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import Headline from "./Headline";
 import { campaign, formatDate } from "@/lib/campaign";
 
@@ -35,7 +37,16 @@ const docs = [
   },
 ];
 
+/** Link do PDF do CA só se o arquivo estiver em public/ — nada de link quebrado. */
+function pdfDoCertificado(): string | null {
+  const { pdf } = campaign.certificado;
+  if (!pdf) return null;
+  return fs.existsSync(path.join(process.cwd(), "public", pdf)) ? pdf : null;
+}
+
 export default function LegalDocs() {
+  const pdf = pdfDoCertificado();
+
   return (
     <section id="legal" className="secao-clara bg-white py-24 md:py-32">
       <div className="mx-auto max-w-6xl px-6 md:px-10">
@@ -74,10 +85,26 @@ export default function LegalDocs() {
           <p className="text-[11px] font-black uppercase tracking-label text-steel">
             Certificado de Autorização · {campaign.legal.orgao}
           </p>
+          {campaign.certificado.numero && (
+            <p className="mt-2.5 text-lg font-black text-navy">
+              Nº {campaign.certificado.numero}
+            </p>
+          )}
           <p className="mt-2.5 max-w-prose text-sm leading-relaxed text-ink/70">
-            Acesse o documento anexo para consultar os detalhes da
-            certificação da promoção.
+            {pdf
+              ? "Acesse o documento para consultar os detalhes da certificação da promoção."
+              : "O documento do certificado estará disponível aqui em breve."}
           </p>
+          {pdf && (
+            <a
+              href={pdf}
+              target="_blank"
+              rel="noopener"
+              className="btn-primary mt-5 inline-flex"
+            >
+              Ver certificado (PDF)
+            </a>
+          )}
 
           <dl className="mt-8 grid gap-6 border-t border-line pt-7 sm:grid-cols-4">
             <Item term="Período de participação" value={periodo()} />

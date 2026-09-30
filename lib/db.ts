@@ -107,6 +107,23 @@ ALTER TABLE participantes ADD COLUMN IF NOT EXISTS aceita_comunicacoes BOOLEAN N
 -- Dados da compra vindos da IOTA, para auditoria.
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS loja TEXT;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comprado_em TIMESTAMPTZ;
+
+-- "Esqueci minha senha": guarda só o hash do token enviado por e-mail.
+CREATE TABLE IF NOT EXISTS redefinicoes_senha (
+  token_hash TEXT PRIMARY KEY,
+  cpf        CHAR(11) NOT NULL REFERENCES participantes (cpf),
+  expira_em  TIMESTAMPTZ NOT NULL,
+  usado_em   TIMESTAMPTZ,
+  criado_em  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Limite de tentativas (lib/limite.ts). A chave leva o hash do IP, nunca o
+-- IP em si, e as linhas são apagadas depois de um dia.
+CREATE TABLE IF NOT EXISTS tentativas (
+  chave     TEXT NOT NULL,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS tentativas_chave_idx ON tentativas (chave, criado_em);
 `;
 
 async function criarSchema(): Promise<void> {

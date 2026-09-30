@@ -311,14 +311,13 @@ que não há mais formulário de cadastro de nota.
 
 | Item | Observação |
 | --- | --- |
-| Upload assinado | §5 |
-| Rate limiting | por IP e por CPF, no endpoint de cadastro, em `/api/meus-numeros` (login) e em `/api/meus-numeros/senha` (criação) — este último é o alvo óbvio de força bruta contra o par CPF+e-mail |
-| CAPTCHA | contra automação em massa, principalmente em `/api/meus-numeros/senha` |
-| E-mail transacional | confirmação com os números emitidos; e viabiliza um fluxo de "esqueci minha senha" em `/meus-numeros`, que hoje não existe |
+| Rate limiting | **feito** (`lib/limite.ts`, no Postgres): login 30/15 min por IP e 10 erros/15 min por CPF (zera no login certo); cadastro 10/h por IP; esqueci 3/h por CPF e 10/h por IP; redefinir 20/h por IP. O IP entra só como hash e sai em 1 dia |
+| CAPTCHA | contra automação em massa no cadastro, se o rate limiting não bastar |
+| E-mail transacional | **"esqueci minha senha" feito** (`/api/meus-numeros/esqueci` + `/meus-numeros/redefinir`, link de uso único válido por 1 h, via Resend — `RESEND_API_KEY`, `EMAIL_FROM`, `SITE_URL`). Falta: e-mail de confirmação com os números emitidos |
 | Área do participante | `/meus-numeros`, com login por CPF + senha (§3.5), lendo do banco |
 | API da IOTA | tratamento de cancelamento/estorno — ver §3.5 |
 | Apuração | entrada dos resultados oficiais da Loteria Federal |
-| `robots: index` | hoje `noindex` em `app/layout.tsx` — liberar na publicação |
+| `robots: index` | automático: `app/layout.tsx` só libera o Google quando `transactionsAllowed()` |
 | Aviso de cookies | se houver medição de audiência |
 
 ---
@@ -352,7 +351,8 @@ que não há mais formulário de cadastro de nota.
 - [ ] `certificado.numero` e `certificado.pdf` preenchidos
 - [ ] `NEXT_PUBLIC_PROMO_STATUS=ACTIVE`
 - [ ] Verificar que o CA aparece na seção "Documentos oficiais" e no rodapé
-- [ ] `robots: index` liberado
+- [ ] PDF do CA em `public/docs/certificado-autorizacao.pdf` (o link aparece sozinho)
+- [ ] `RESEND_API_KEY`, `EMAIL_FROM` e `SITE_URL` configuradas, domínio verificado na Resend
 - [ ] `IOTA_API_KEY` e `IOTA_API_TOKEN` configuradas em produção
       (§3.5), com chave e token novos (os atuais circularam no WhatsApp)
 - [ ] Teste de ponta a ponta com um pedido real na loja

@@ -40,8 +40,11 @@ export const campaign = {
   certificado: {
     /** Preencher com o nº do CA assim que emitido. Ex.: "04.123456/2026". */
     numero: "2026/06438" as string | null,
-    /** URL do PDF do CA hospedado. Obrigatório exibir na LP após a emissão. */
-    pdf: null as string | null,
+    /**
+     * PDF do CA. Obrigatório exibir na LP após a emissão. O link só aparece
+     * quando o arquivo existe em public/ — basta soltar o PDF lá com este nome.
+     */
+    pdf: "/docs/certificado-autorizacao.pdf" as string | null,
   },
 
   /**

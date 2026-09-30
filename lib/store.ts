@@ -12,6 +12,7 @@
  *     duas compras simultâneas do mesmo CPF não passam juntas do limite.
  */
 
+import { createHash, randomBytes } from "crypto";
 import { query, transacao, TAMANHO_SERIE } from "./db";
 import { aplicarTeto, formatNumeroDaSorte } from "./numeroDaSorte";
 import { hashSenha } from "./senha";
@@ -205,6 +206,64 @@ export async function emitirNumerosDoPedido(params: {
       acumulado: jaAcumulados + concedidos,
       excedente,
     };
+  });
+}
+
+const VALIDADE_TOKEN_MINUTOS = 60;
+
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+/**
+ * "Esqueci minha senha": gera um token de uso único, válido por 1 hora, e
+ * devolve o e-mail cadastrado para enviar o link. O banco guarda só o hash
+ * do token — quem ler a tabela não consegue usar os links. Devolve null se o
+ * CPF não tem cadastro com e-mail (quem chama responde igual nos dois casos).
+ */
+export async function criarTokenRedefinicao(
+  cpf: string
+): Promise<{ token: string; email: string; nome: string | null } | null> {
+  const [participante] = await query<{ email: string | null; nome: string | null }>(
+    "SELECT email, nome FROM participantes WHERE cpf = $1 AND senha_hash IS NOT NULL",
+    [cpf]
+  );
+  if (!participante?.email) return null;
+
+  const token = randomBytes(32).toString("base64url");
+  await query(
+    `INSERT INTO redefinicoes_senha (token_hash, cpf, expira_em)
+     VALUES ($1, $2, now() + make_interval(mins => $3))`,
+    [hashToken(token), cpf, VALIDADE_TOKEN_MINUTOS]
+  );
+  return { token, email: participante.email, nome: participante.nome };
+}
+
+/**
+ * Troca a senha a partir do token do e-mail. O token vale uma vez só; ao
+ * usar, todos os outros tokens pendentes do mesmo CPF também são anulados.
+ * Devolve false se o token não existe, venceu ou já foi usado.
+ */
+export async function redefinirSenhaComToken(token: string, senhaHash: string): Promise<boolean> {
+  return transacao(async (client) => {
+    const { rows } = await client.query<{ cpf: string }>(
+      `UPDATE redefinicoes_senha SET usado_em = now()
+       WHERE token_hash = $1 AND usado_em IS NULL AND expira_em > now()
+       RETURNING cpf`,
+      [hashToken(token)]
+    );
+    if (rows.length === 0) return false;
+
+    const { cpf } = rows[0];
+    await client.query(
+      "UPDATE participantes SET senha_hash = $2, atualizado_em = now() WHERE cpf = $1",
+      [cpf, senhaHash]
+    );
+    await client.query(
+      "UPDATE redefinicoes_senha SET usado_em = now() WHERE cpf = $1 AND usado_em IS NULL",
+      [cpf]
+    );
+    return true;
   });
 }
 
