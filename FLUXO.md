@@ -331,7 +331,7 @@ que não há mais formulário de cadastro de nota.
 | CAPTCHA | contra automação em massa no cadastro, se o rate limiting não bastar |
 | E-mail transacional | **"esqueci minha senha" feito** (`/api/meus-numeros/esqueci` + `/meus-numeros/redefinir`, link de uso único válido por 1 h, via Resend — `RESEND_API_KEY`, `EMAIL_FROM`, `SITE_URL`). Falta: e-mail de confirmação com os números emitidos |
 | Área do participante | `/meus-numeros`, com login por CPF + senha (§3.5), lendo do banco |
-| Apuração | entrada dos resultados oficiais da Loteria Federal |
+| Apuração | **área /admin feita** (senha em `ADMIN_SENHA`): apuração pela cláusula 7 com a série informada, dono de um número e ficha do CPF (`lib/apuracao.ts`). Falta: registrar os ganhadores oficiais de cada sorteio |
 | `robots: index` | automático: `app/layout.tsx` só libera o Google quando `transactionsAllowed()` |
 | Aviso de cookies | se houver medição de audiência |
 

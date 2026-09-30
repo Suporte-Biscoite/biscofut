@@ -1,4 +1,4 @@
-import { Pool, type PoolClient } from "pg";
+import { Pool, types, type PoolClient } from "pg";
 import { attachDatabasePool } from "@vercel/functions";
 
 /**
@@ -14,6 +14,10 @@ import { attachDatabasePool } from "@vercel/functions";
  * `attachDatabasePool` avisa a Vercel para fechar conexões ociosas antes de
  * suspender a função.
  */
+
+// Colunas DATE (nascimento) chegam como "AAAA-MM-DD", sem virar Date: a
+// conversão para fuso horário pode mudar o dia.
+types.setTypeParser(1082, (valor) => valor);
 
 type DbGlobal = { __campanhaPool?: Pool; __campanhaSchema?: Promise<void> };
 const g = globalThis as DbGlobal;
