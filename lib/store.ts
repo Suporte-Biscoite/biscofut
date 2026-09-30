@@ -62,7 +62,7 @@ export async function buscarParticipante(cpf: string): Promise<Participante | un
 
   const numeros = await query<LinhaNumero>(
     `SELECT numero, origem, referencia, emitido_em FROM numeros
-     WHERE cpf = $1 ORDER BY emitido_em, numero`,
+     WHERE cpf = $1 AND anulado_em IS NULL ORDER BY emitido_em, numero`,
     [cpf]
   );
 
@@ -142,9 +142,10 @@ export async function emitirNumerosDoPedido(params: {
   referencia: string;
   loja?: string | null;
   compradoEm?: string | null;
+  statusLoja?: string | null;
   solicitados: number;
 }): Promise<ResultadoEmissao> {
-  const { cpf, nome, email, origem, referencia, loja, compradoEm, solicitados } = params;
+  const { cpf, nome, email, origem, referencia, loja, compradoEm, statusLoja, solicitados } = params;
 
   return transacao(async (client) => {
     // O upsert trava a linha do participante até o fim da transação.
@@ -158,14 +159,14 @@ export async function emitirNumerosDoPedido(params: {
     );
 
     const pedido = await client.query(
-      `INSERT INTO pedidos (origem, referencia, cpf, numeros_solicitados, loja, comprado_em)
-       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (origem, referencia) DO NOTHING`,
-      [origem, referencia, cpf, solicitados, loja ?? null, compradoEm ?? null]
+      `INSERT INTO pedidos (origem, referencia, cpf, numeros_solicitados, loja, comprado_em, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (origem, referencia) DO NOTHING`,
+      [origem, referencia, cpf, solicitados, loja ?? null, compradoEm ?? null, statusLoja ?? null]
     );
     if (pedido.rowCount === 0) return { status: "ja-processado" as const };
 
     const { rows: contagem } = await client.query<{ total: string }>(
-      "SELECT count(*) AS total FROM numeros WHERE cpf = $1",
+      "SELECT count(*) AS total FROM numeros WHERE cpf = $1 AND anulado_em IS NULL",
       [cpf]
     );
     const jaAcumulados = Number(contagem[0].total);
@@ -206,6 +207,30 @@ export async function emitirNumerosDoPedido(params: {
       acumulado: jaAcumulados + concedidos,
       excedente,
     };
+  });
+}
+
+/**
+ * Compra cancelada ou estornada depois de ter gerado números: marca o pedido
+ * e anula os números dele. Nada é apagado — pedido e números continuam no
+ * banco para auditoria, e o número anulado nunca volta para a fila. Anular
+ * libera espaço no teto de 200 do CPF. Devolve quantos números anulou (0 se
+ * o pedido nunca gerou número ou já estava anulado).
+ */
+export async function anularPedido(origem: OrigemNumero, referencia: string, statusLoja: string): Promise<number> {
+  return transacao(async (client) => {
+    const { rowCount } = await client.query(
+      `UPDATE pedidos SET cancelado_em = now(), status = $3
+       WHERE origem = $1 AND referencia = $2 AND cancelado_em IS NULL`,
+      [origem, referencia, statusLoja]
+    );
+    if (!rowCount) return 0;
+    const anulados = await client.query(
+      `UPDATE numeros SET anulado_em = now()
+       WHERE origem = $1 AND referencia = $2 AND anulado_em IS NULL`,
+      [origem, referencia]
+    );
+    return anulados.rowCount ?? 0;
   });
 }
 

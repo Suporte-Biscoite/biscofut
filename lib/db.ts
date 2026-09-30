@@ -120,6 +120,12 @@ ALTER TABLE participantes ADD COLUMN IF NOT EXISTS aceita_comunicacoes BOOLEAN N
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS loja TEXT;
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comprado_em TIMESTAMPTZ;
 
+-- Cancelamento/estorno: o pedido e os números ficam no banco (auditoria) e
+-- os números nunca são reaproveitados — só saem da conta e do sorteio.
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS status TEXT;
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS cancelado_em TIMESTAMPTZ;
+ALTER TABLE numeros ADD COLUMN IF NOT EXISTS anulado_em TIMESTAMPTZ;
+
 -- "Esqueci minha senha": guarda só o hash do token enviado por e-mail.
 CREATE TABLE IF NOT EXISTS redefinicoes_senha (
   token_hash TEXT PRIMARY KEY,

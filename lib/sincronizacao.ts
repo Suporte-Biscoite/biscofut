@@ -1,8 +1,8 @@
 import { campaign } from "./campaign";
-import { buscarPedidosDoCliente, skuParaProduto, type PedidoLoja } from "./iota";
+import { buscarPedidosDoCliente, situacaoDoPedido, skuParaProduto, type PedidoLoja } from "./iota";
 import { calcularNumeros, produtosElegiveis, type ItemCompra } from "./numeroDaSorte";
 import { transactionsAllowed } from "./promoStatus";
-import { emitirNumerosDoPedido } from "./store";
+import { anularPedido, emitirNumerosDoPedido } from "./store";
 
 /**
  * Traz as compras do CPF da IOTA e emite os números das que ainda não foram
@@ -16,7 +16,7 @@ import { emitirNumerosDoPedido } from "./store";
  */
 
 export type ResultadoSincronizacao =
-  | { status: "ok"; pedidosNovos: number; numerosNovos: number }
+  | { status: "ok"; pedidosNovos: number; numerosNovos: number; numerosAnulados: number }
   | { status: "bloqueada" } // antes do CA: a promoção não pode gerar números
   | { status: "indisponivel" }; // IOTA fora do ar: mostra o que já está no banco
 
@@ -57,10 +57,21 @@ export async function sincronizarPedidos(cpf: string): Promise<ResultadoSincroni
   const skus = skuParaProduto();
   let pedidosNovos = 0;
   let numerosNovos = 0;
+  let numerosAnulados = 0;
 
   // Em ordem de compra: se o teto de 200 cortar, corta as compras mais novas.
   const ordenados = pedidos.filter(dentroDaVigencia).sort((a, b) => a.criadoEm.localeCompare(b.criadoEm));
   for (const pedido of ordenados) {
+    const situacao = situacaoDoPedido(pedido.status);
+    if (situacao === "cancelado") {
+      numerosAnulados += await anularPedido("loja", pedido.id, pedido.status!);
+      continue;
+    }
+    if (situacao === "desconhecido") {
+      console.warn(`[sincronizacao] pedido ${pedido.id} com status desconhecido "${pedido.status}" — sem números até ser classificado em lib/iota.ts`);
+      continue;
+    }
+
     const solicitados = calcularNumeros(itensParticipantes(pedido, skus));
     if (solicitados === 0) continue;
 
@@ -70,6 +81,7 @@ export async function sincronizarPedidos(cpf: string): Promise<ResultadoSincroni
       referencia: pedido.id,
       loja: pedido.loja,
       compradoEm: pedido.criadoEm,
+      statusLoja: pedido.status,
       solicitados,
     });
     if (resultado.status === "emitido") {
@@ -78,5 +90,5 @@ export async function sincronizarPedidos(cpf: string): Promise<ResultadoSincroni
     }
   }
 
-  return { status: "ok", pedidosNovos, numerosNovos };
+  return { status: "ok", pedidosNovos, numerosNovos, numerosAnulados };
 }

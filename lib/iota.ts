@@ -11,9 +11,10 @@
  * aos itens da campanha — hoje lista todos os produtos):
  *
  *   { result, ordersData: { customer: { document, name, id },
- *     orders: [{ id, salesChannelName, createdAt, items: [{ sku, name, quantity }] }] } }
+ *     orders: [{ id, status, salesChannelName, createdAt, items: [{ sku, name, quantity }] }] } }
  *
- * Não vem e-mail, telefone nem status do pedido.
+ * Não vem e-mail nem telefone. O `status` foi incluído pela IOTA em
+ * 30/09/2026 (até agora só apareceu "delivered").
  */
 
 const URL_PADRAO = "https://api.hub.iotaapp.com.br/provider/biscoite/campaigns";
@@ -44,8 +45,29 @@ export function skuParaProduto(): Record<string, string> {
   );
 }
 
+/**
+ * O que fazer com o pedido conforme o status. ⚠️ Lista montada com o único
+ * valor visto até agora ("delivered") e os nomes usuais — confirmar com a
+ * IOTA a lista completa. Status fora das duas listas não gera número e vai
+ * para o log; quando for incluído aqui, a próxima sincronização emite.
+ */
+const STATUS_VALIDOS = new Set(["delivered", "invoiced", "paid", "approved", "completed", "finished"]);
+const STATUS_CANCELADOS = new Set(["canceled", "cancelled", "refunded", "returned", "voided", "chargeback"]);
+
+export type SituacaoPedido = "valido" | "cancelado" | "desconhecido";
+
+export function situacaoDoPedido(status: string | null): SituacaoPedido {
+  // Sem status: a API antiga não mandava o campo e todos eram vendas feitas.
+  if (!status) return "valido";
+  if (STATUS_VALIDOS.has(status)) return "valido";
+  if (STATUS_CANCELADOS.has(status)) return "cancelado";
+  return "desconhecido";
+}
+
 export type PedidoLoja = {
   id: string;
+  /** Status no PDV (ex.: "delivered"). `null` se a API não mandar. */
+  status: string | null;
   loja: string | null;
   /** Data e hora da compra, com o fuso da loja (ex.: 2026-10-02T19:50:17-03:00). */
   criadoEm: string;
@@ -59,6 +81,7 @@ type RespostaIota = {
     customer?: { document?: string; name?: string | null } | null;
     orders?: Array<{
       id?: string | number;
+      status?: string | null;
       salesChannelName?: string | null;
       createdAt?: string;
       items?: Array<{ sku?: string | number; name?: string | null; quantity?: number }> | null;
@@ -106,6 +129,7 @@ export async function buscarPedidosDoCliente(cpf: string): Promise<ClienteLoja> 
       .filter((pedido) => pedido.id !== undefined && pedido.createdAt)
       .map((pedido) => ({
         id: String(pedido.id),
+        status: pedido.status?.trim().toLowerCase() || null,
         loja: pedido.salesChannelName ?? null,
         criadoEm: pedido.createdAt!,
         itens: (pedido.items ?? []).map((item) => ({
