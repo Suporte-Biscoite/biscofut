@@ -1,5 +1,6 @@
 import FutiWordmark from "./FutiWordmark";
 import Headline from "./Headline";
+import HeroVideo from "./HeroVideo";
 import Sticker from "./Sticker";
 import { campaign, formatDate } from "@/lib/campaign";
 
@@ -33,18 +34,7 @@ export default function Hero() {
         className="relative aspect-[4/5] max-h-[78vh] w-full sm:aspect-[4/3] lg:absolute lg:inset-0 lg:left-auto lg:-z-10 lg:aspect-auto lg:max-h-none lg:w-[68%]"
         aria-hidden="true"
       >
-        <video
-          className="h-full w-full object-cover object-[42%_50%] lg:object-center"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster="/gif/web/neymar-assinando-poster.jpg"
-        >
-          <source src="/gif/web/neymar-assinando.webm" type="video/webm" />
-          <source src="/gif/web/neymar-assinando.mp4" type="video/mp4" />
-        </video>
+        <HeroVideo className="h-full w-full object-cover object-[42%_50%] lg:object-center" />
         {/* Mobile: só um degradê no topo, para o menu continuar legível. */}
         <div
           className="absolute inset-x-0 top-0 h-28 lg:hidden"
