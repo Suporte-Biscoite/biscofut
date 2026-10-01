@@ -12,7 +12,6 @@ export default function TermosDeUso() {
   return (
     <LegalPage
       title="Termos de Uso"
-      updatedAt={null}
       intro="Estas são as condições de uso desta plataforma. Elas tratam do site; as regras da promoção em si estão no regulamento."
     >
       <Clause n="1" title="Objeto">

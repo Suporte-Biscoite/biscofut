@@ -14,12 +14,10 @@ import { campaign, legalFooterText } from "@/lib/campaign";
  */
 export default function LegalPage({
   title,
-  updatedAt,
   intro,
   children,
 }: {
   title: string;
-  updatedAt: string | null;
   intro: string;
   children: ReactNode;
 }) {
@@ -47,9 +45,6 @@ export default function LegalPage({
           {title}
         </h1>
         <p className="mt-5 text-lg leading-relaxed text-ink/75">{intro}</p>
-        <p className="mt-5 text-xs font-medium uppercase tracking-label text-steel">
-          Última atualização: {updatedAt ?? "a definir"}
-        </p>
 
         <div className="legal-body mt-12">{children}</div>
 

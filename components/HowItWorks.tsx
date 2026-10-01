@@ -24,7 +24,7 @@ const steps = [
   {
     n: "03",
     title: "Seus números são gerados automaticamente",
-    body: "Cada compra de produto participante feita com o seu CPF gera números da sorte automaticamente, de acordo com o produto — por exemplo, 25 números por unidade de Futi Arena. Não é preciso cadastrar nota fiscal.",
+    body: "Cada compra de produto participante feita com o seu CPF gera números da sorte automaticamente, de acordo com o produto — por exemplo, 25 números por unidade de Futi Arena.",
   },
   {
     n: "04",

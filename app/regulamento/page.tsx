@@ -29,7 +29,6 @@ export default function Regulamento() {
   return (
     <LegalPage
       title='Regulamento – Promoção "Compre e Concorra"'
-      updatedAt={null}
       intro={`${promotora.razaoSocial}, pessoa jurídica de direito privado, inscrita no CNPJ/MF sob o nº ${promotora.cnpj}, com sede ${promotora.endereco}, neste ato representada por ${promotora.representante.nome}, ${promotora.representante.nacionalidade}, ${promotora.representante.estadoCivil}, portador da cédula de identidade RG nº ${promotora.representante.rg} e inscrito no CPF/MF sob o nº ${promotora.representante.cpf}, doravante denominada "Promotora".`}
     >
       <Clause n="1" title="Modalidade da promoção">

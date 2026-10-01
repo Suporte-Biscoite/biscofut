@@ -12,7 +12,6 @@ export default function PoliticaDePrivacidade() {
   return (
     <LegalPage
       title="Política de Privacidade"
-      updatedAt={null}
       intro="Esta política explica quais dados a promoção coleta, por quê, com que base legal, por quanto tempo ficam guardados e como você exerce seus direitos."
     >
       <Clause n="1" title="Quem é o controlador">
