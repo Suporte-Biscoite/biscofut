@@ -13,7 +13,10 @@ import {
   isValidCPF,
   isValidEmail,
   isValidFullName,
+  isValidCidade,
   isValidPhone,
+  isValidUF,
+  UFS,
 } from "@/lib/masks";
 
 /**
@@ -314,6 +317,8 @@ function FormularioCadastro({ onSucesso }: { onSucesso: (r: Resultado) => void }
     nascimento: "",
     email: "",
     telefone: "",
+    cidade: "",
+    uf: "",
     senha: "",
     confirmarSenha: "",
   });
@@ -340,6 +345,8 @@ function FormularioCadastro({ onSucesso }: { onSucesso: (r: Resultado) => void }
       novosErros.nascimento = `A promoção é só para maiores de ${campaign.regras.idadeMinima} anos.`;
     if (!isValidEmail(dados.email)) novosErros.email = "E-mail inválido.";
     if (!isValidPhone(dados.telefone)) novosErros.telefone = "Telefone inválido.";
+    if (!isValidCidade(dados.cidade)) novosErros.cidade = "Informe sua cidade.";
+    if (!isValidUF(dados.uf)) novosErros.uf = "Selecione o estado.";
     if (dados.senha.length < 6) novosErros.senha = "A senha precisa ter pelo menos 6 caracteres.";
     if (dados.confirmarSenha !== dados.senha) novosErros.confirmarSenha = "As senhas não coincidem.";
     if (!aceites.documentos) novosErros.documentos = "Obrigatório para participar.";
@@ -359,6 +366,8 @@ function FormularioCadastro({ onSucesso }: { onSucesso: (r: Resultado) => void }
           nascimento: dados.nascimento,
           email: dados.email,
           telefone: dados.telefone,
+          cidade: dados.cidade,
+          uf: dados.uf,
           senha: dados.senha,
           aceiteDocumentos: aceites.documentos,
           aceiteComunicacoes: aceites.comunicacoes,
@@ -421,6 +430,32 @@ function FormularioCadastro({ onSucesso }: { onSucesso: (r: Resultado) => void }
             placeholder="(11) 90000-0000"
             {...campo("telefone", formatPhone)}
           />
+        </Field>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-[1fr_8rem]">
+        <Field id="cad-cidade" label="Cidade" error={erros.cidade}>
+          <Input id="cad-cidade" autoComplete="address-level2" placeholder="Sua cidade" {...campo("cidade")} />
+        </Field>
+        <Field id="cad-uf" label="UF" error={erros.uf}>
+          <select
+            id="cad-uf"
+            autoComplete="address-level1"
+            value={dados.uf}
+            onChange={(e) => setDados((d) => ({ ...d, uf: e.target.value }))}
+            aria-invalid={erros.uf ? true : undefined}
+            aria-describedby={erros.uf ? "cad-uf-error" : undefined}
+            className={`w-full rounded-xl border bg-white px-4 py-3 text-sm font-medium text-ink outline-none transition-colors ${
+              erros.uf ? "border-alert" : "border-line focus:border-steel"
+            }`}
+          >
+            <option value="">—</option>
+            {UFS.map((uf) => (
+              <option key={uf} value={uf}>
+                {uf}
+              </option>
+            ))}
+          </select>
         </Field>
       </div>
 

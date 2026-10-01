@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { campaign } from "@/lib/campaign";
 import {
   ageOn,
+  isValidCidade,
   isValidCPF,
   isValidEmail,
   isValidFullName,
   isValidPhone,
+  isValidUF,
   onlyDigits,
 } from "@/lib/masks";
 import { excedeuLimite, hashIp, ipDaRequisicao, MENSAGEM_LIMITE } from "@/lib/limite";
@@ -34,6 +36,8 @@ export async function POST(request: Request) {
     nascimento?: string;
     email?: string;
     telefone?: string;
+    cidade?: string;
+    uf?: string;
     senha?: string;
     aceiteDocumentos?: boolean;
     aceiteComunicacoes?: boolean;
@@ -56,6 +60,8 @@ export async function POST(request: Request) {
   const nascimento = body.nascimento ?? "";
   const email = (body.email ?? "").trim().toLowerCase();
   const telefone = onlyDigits(body.telefone ?? "");
+  const cidade = (body.cidade ?? "").trim().replace(/\s+/g, " ");
+  const uf = (body.uf ?? "").trim().toUpperCase();
   const senha = body.senha ?? "";
 
   const erro =
@@ -65,6 +71,8 @@ export async function POST(request: Request) {
       `A promoção é só para maiores de ${campaign.regras.idadeMinima} anos.`) ||
     (!isValidEmail(email) && "E-mail inválido.") ||
     (!isValidPhone(telefone) && "Telefone inválido.") ||
+    (!isValidCidade(cidade) && "Informe sua cidade.") ||
+    (!isValidUF(uf) && "Selecione o estado (UF).") ||
     (!senhaForte(senha) && "A senha precisa ter pelo menos 6 caracteres.") ||
     (body.aceiteDocumentos !== true &&
       "Para participar, aceite o regulamento e a política de privacidade.");
@@ -83,6 +91,8 @@ export async function POST(request: Request) {
     nome,
     email,
     telefone,
+    cidade,
+    uf,
     nascimento,
     senhaHash: hashSenha(senha),
     aceitaComunicacoes: body.aceiteComunicacoes === true,

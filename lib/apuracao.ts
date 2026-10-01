@@ -28,6 +28,8 @@ export type DadosGanhador = {
   email: string | null;
   telefone: string | null;
   nascimento: string | null;
+  cidade: string | null;
+  uf: string | null;
   cadastradoEm: string | null;
   pedido: { id: string; loja: string | null; compradoEm: string | null; status: string | null };
 };
@@ -39,6 +41,8 @@ type Linha = {
   email: string | null;
   telefone: string | null;
   nascimento: string | null;
+  cidade: string | null;
+  uf: string | null;
   cadastrado_em: Date | null;
   referencia: string;
   loja: string | null;
@@ -47,7 +51,7 @@ type Linha = {
 };
 
 const SELECT_DONO = `
-  SELECT n.numero, n.cpf, p.nome, p.email, p.telefone, p.nascimento, p.cadastrado_em,
+  SELECT n.numero, n.cpf, p.nome, p.email, p.telefone, p.nascimento, p.cidade, p.uf, p.cadastrado_em,
          n.referencia, pe.loja, pe.comprado_em, pe.status
   FROM numeros n
   JOIN participantes p ON p.cpf = n.cpf
@@ -62,6 +66,8 @@ function paraGanhador(linha: Linha): DadosGanhador {
     email: linha.email,
     telefone: linha.telefone,
     nascimento: linha.nascimento,
+    cidade: linha.cidade,
+    uf: linha.uf,
     cadastradoEm: linha.cadastrado_em?.toISOString() ?? null,
     pedido: {
       id: linha.referencia,
@@ -146,6 +152,8 @@ export type FichaParticipante = {
   email: string | null;
   telefone: string | null;
   nascimento: string | null;
+  cidade: string | null;
+  uf: string | null;
   cadastradoEm: string | null;
   aceitaComunicacoes: boolean;
   numeros: Array<{ numero: string; pedido: string; anulado: boolean }>;
@@ -167,10 +175,12 @@ export async function fichaDoParticipante(cpf: string): Promise<FichaParticipant
     email: string | null;
     telefone: string | null;
     nascimento: string | null;
+    cidade: string | null;
+    uf: string | null;
     cadastrado_em: Date | null;
     aceita_comunicacoes: boolean;
   }>(
-    `SELECT cpf, nome, email, telefone, nascimento, cadastrado_em, aceita_comunicacoes
+    `SELECT cpf, nome, email, telefone, nascimento, cidade, uf, cadastrado_em, aceita_comunicacoes
      FROM participantes WHERE cpf = $1`,
     [cpf]
   );
@@ -199,6 +209,8 @@ export async function fichaDoParticipante(cpf: string): Promise<FichaParticipant
     email: p.email,
     telefone: p.telefone,
     nascimento: p.nascimento,
+    cidade: p.cidade,
+    uf: p.uf,
     cadastradoEm: p.cadastrado_em?.toISOString() ?? null,
     aceitaComunicacoes: p.aceita_comunicacoes,
     numeros: numeros.map((n) => ({

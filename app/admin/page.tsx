@@ -20,6 +20,8 @@ type Ganhador = {
   email: string | null;
   telefone: string | null;
   nascimento: string | null;
+  cidade: string | null;
+  uf: string | null;
   cadastradoEm: string | null;
   pedido: { id: string; loja: string | null; compradoEm: string | null; status: string | null };
   criterio?: string;
@@ -31,6 +33,8 @@ type Ficha = {
   email: string | null;
   telefone: string | null;
   nascimento: string | null;
+  cidade: string | null;
+  uf: string | null;
   cadastradoEm: string | null;
   aceitaComunicacoes: boolean;
   numeros: Array<{ numero: string; pedido: string; anulado: boolean }>;
@@ -393,6 +397,8 @@ function BuscarCpf({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
             email={ficha.email}
             telefone={ficha.telefone}
             nascimento={ficha.nascimento}
+            cidade={ficha.cidade}
+            uf={ficha.uf}
             cadastradoEm={ficha.cadastradoEm}
           />
           <p className="text-sm text-ink/70">
@@ -451,6 +457,8 @@ function CartaoGanhador({ titulo, ganhador }: { titulo: string; ganhador: Ganhad
         email={ganhador.email}
         telefone={ganhador.telefone}
         nascimento={ganhador.nascimento}
+        cidade={ganhador.cidade}
+        uf={ganhador.uf}
         cadastradoEm={ganhador.cadastradoEm}
       />
       <p className="text-sm text-ink/70">
@@ -468,6 +476,8 @@ function Contato(p: {
   email: string | null;
   telefone: string | null;
   nascimento: string | null;
+  cidade: string | null;
+  uf: string | null;
   cadastradoEm: string | null;
 }) {
   const whatsapp = p.telefone ? `https://wa.me/55${p.telefone}` : null;
@@ -475,6 +485,7 @@ function Contato(p: {
     <dl className="grid gap-4 text-sm sm:grid-cols-2">
       <Item rotulo="Nome">{p.nome ?? "—"}</Item>
       <Item rotulo="CPF">{formatCPF(p.cpf)}</Item>
+      <Item rotulo="Cidade">{p.cidade ? `${p.cidade}/${p.uf}` : "—"}</Item>
       <Item rotulo="E-mail">
         {p.email ? (
           <a href={`mailto:${p.email}`} className="font-black text-navy underline underline-offset-2">

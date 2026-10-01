@@ -88,19 +88,22 @@ export async function cadastrarParticipante(dados: {
   email: string;
   telefone: string;
   nascimento: string;
+  cidade: string;
+  uf: string;
   senhaHash: string;
   aceitaComunicacoes: boolean;
 }): Promise<boolean> {
   const linhas = await query<{ cpf: string }>(
     `INSERT INTO participantes
        (cpf, nome, email, telefone, nascimento, senha_hash, cadastrado_em,
-        aceitou_documentos_em, aceita_comunicacoes)
-     VALUES ($1, $2, $3, $4, $5, $6, now(), now(), $7)
+        aceitou_documentos_em, aceita_comunicacoes, cidade, uf)
+     VALUES ($1, $2, $3, $4, $5, $6, now(), now(), $7, $8, $9)
      ON CONFLICT (cpf) DO UPDATE SET
        nome = EXCLUDED.nome, email = EXCLUDED.email, telefone = EXCLUDED.telefone,
        nascimento = EXCLUDED.nascimento, senha_hash = EXCLUDED.senha_hash,
        cadastrado_em = now(), aceitou_documentos_em = now(),
-       aceita_comunicacoes = EXCLUDED.aceita_comunicacoes, atualizado_em = now()
+       aceita_comunicacoes = EXCLUDED.aceita_comunicacoes, cidade = EXCLUDED.cidade,
+       uf = EXCLUDED.uf, atualizado_em = now()
      WHERE participantes.senha_hash IS NULL
      RETURNING cpf`,
     [
@@ -111,6 +114,8 @@ export async function cadastrarParticipante(dados: {
       dados.nascimento,
       dados.senhaHash,
       dados.aceitaComunicacoes,
+      dados.cidade,
+      dados.uf,
     ]
   );
   return linhas.length === 1;
@@ -320,6 +325,8 @@ function garantirParticipanteTeste(): Promise<void> {
       email: "teste@biscoite.com.br",
       telefone: "11999999999",
       nascimento: "1990-01-01",
+      cidade: "São Paulo",
+      uf: "SP",
       senhaHash: hashSenha("teste123"),
       aceitaComunicacoes: false,
     });

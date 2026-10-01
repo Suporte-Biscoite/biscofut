@@ -58,6 +58,22 @@ export function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(value.trim());
 }
 
+/** As 27 unidades da federação, para o campo UF do cadastro. */
+export const UFS = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA",
+  "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+] as const;
+
+export function isValidUF(value: string): boolean {
+  return (UFS as readonly string[]).includes(value);
+}
+
+/** Cidade: ao menos 2 letras, sem dígitos. */
+export function isValidCidade(value: string): boolean {
+  const cidade = value.trim();
+  return cidade.length >= 2 && cidade.length <= 80 && !/\d/.test(cidade);
+}
+
 /** Nome completo = pelo menos dois nomes, sem dígitos. */
 export function isValidFullName(value: string): boolean {
   const name = value.trim().replace(/\s+/g, " ");

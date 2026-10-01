@@ -119,6 +119,9 @@ ALTER TABLE participantes ADD COLUMN IF NOT EXISTS cadastrado_em TIMESTAMPTZ;
 -- Momento em que aceitou regulamento + política (os dois são obrigatórios).
 ALTER TABLE participantes ADD COLUMN IF NOT EXISTS aceitou_documentos_em TIMESTAMPTZ;
 ALTER TABLE participantes ADD COLUMN IF NOT EXISTS aceita_comunicacoes BOOLEAN NOT NULL DEFAULT FALSE;
+-- Cidade e UF: para divulgar nome e cidade dos contemplados.
+ALTER TABLE participantes ADD COLUMN IF NOT EXISTS cidade TEXT;
+ALTER TABLE participantes ADD COLUMN IF NOT EXISTS uf CHAR(2);
 
 -- Dados da compra vindos da IOTA, para auditoria.
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS loja TEXT;

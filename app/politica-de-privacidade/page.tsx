@@ -38,8 +38,8 @@ export default function PoliticaDePrivacidade() {
         <Bullets
           items={[
             <>
-              <strong>Identificação:</strong> nome completo, CPF e data de
-              nascimento. O CPF é indispensável: é ele que identifica a
+              <strong>Identificação:</strong> nome completo, CPF, data de
+              nascimento, cidade e estado. O CPF é indispensável: é ele que identifica a
               participação, aplica o limite por pessoa e permite a entrega do
               prêmio.
             </>,
