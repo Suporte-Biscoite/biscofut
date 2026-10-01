@@ -23,14 +23,18 @@ export default function Hero() {
   return (
     <section
       id="conteudo"
-      className="relative isolate overflow-hidden pt-32 pb-20 text-[#FFFFFF] md:pt-40 md:pb-28 lg:min-h-[44rem]"
+      className="relative isolate overflow-hidden pb-20 text-[#FFFFFF] md:pb-28 lg:min-h-[44rem] lg:pt-40"
       style={{ backgroundColor: FUNDO }}
     >
-      {/* Vídeo à direita no desktop, para o Neymar não ficar atrás do texto;
-          no mobile ocupa tudo, sob um véu mais forte. */}
-      <div className="absolute inset-0 -z-10 lg:left-auto lg:w-[68%]" aria-hidden="true">
+      {/* Desktop: vídeo de fundo à direita, para o Neymar não ficar atrás do
+          texto. Mobile: o vídeo é um bloco próprio no topo, sem véu e sem texto
+          por cima, recortado no Neymar assinando — o texto vem logo abaixo. */}
+      <div
+        className="relative aspect-[4/5] max-h-[78vh] w-full sm:aspect-[4/3] lg:absolute lg:inset-0 lg:left-auto lg:-z-10 lg:aspect-auto lg:max-h-none lg:w-[68%]"
+        aria-hidden="true"
+      >
         <video
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover object-[42%_50%] lg:object-center"
           autoPlay
           muted
           loop
@@ -41,9 +45,10 @@ export default function Hero() {
           <source src="/gif/web/neymar-assinando.webm" type="video/webm" />
           <source src="/gif/web/neymar-assinando.mp4" type="video/mp4" />
         </video>
+        {/* Mobile: só um degradê no topo, para o menu continuar legível. */}
         <div
-          className="absolute inset-0 lg:hidden"
-          style={{ backgroundColor: `${FUNDO}c7` }}
+          className="absolute inset-x-0 top-0 h-28 lg:hidden"
+          style={{ background: `linear-gradient(to bottom, ${FUNDO}cc, transparent)` }}
         />
         <div
           className="absolute inset-0 hidden lg:block"
@@ -52,12 +57,12 @@ export default function Hero() {
           }}
         />
         <div
-          className="absolute inset-x-0 bottom-0 h-40"
+          className="absolute inset-x-0 bottom-0 h-24 lg:h-40"
           style={{ background: `linear-gradient(to top, ${FUNDO}, transparent)` }}
         />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-6 md:px-10">
+      <div className="relative mx-auto -mt-6 max-w-6xl px-6 md:px-10 lg:mt-0">
         <div className="max-w-xl animate-floatUp">
           <p className="eyebrow !text-[#FFFFFF]/70">
             Promoção comercial · Biscoitê &amp; Neymar Jr.
