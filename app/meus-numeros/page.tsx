@@ -43,7 +43,7 @@ type Resultado = {
   limite: number;
   numeros: Numero[];
   /** "indisponivel": a leitura das compras falhou — mostra o que já existe. */
-  compras: "ok" | "bloqueada" | "indisponivel";
+  compras: "ok" | "recente" | "bloqueada" | "indisponivel";
 };
 type Modo = "entrar" | "cadastrar" | "esqueci";
 

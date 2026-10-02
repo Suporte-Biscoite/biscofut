@@ -196,7 +196,11 @@ Participante ──cadastro / login──> /api/meus-numeros ┘──> lib/sinc
    `pedidos`).
 3. **IOTA fora do ar**: o login funciona e mostra os números que já estão no
    banco, com um aviso; as compras novas entram no próximo login.
-4. **Antes do CA**: cadastro e emissão recusados (só liberados em
+4. **No máximo uma consulta a cada 5 minutos por CPF** (`IOTA_INTERVALO_MINUTOS`):
+   cada consulta vira uma chamada à listagem de pedidos da Nexaas, que tem
+   rate limit. Logins seguidos dentro do intervalo mostram o que já está no
+   banco.
+5. **Antes do CA**: cadastro e emissão recusados (só liberados em
    `next dev`, para testar).
 
 **Variáveis de ambiente** (Vercel):

@@ -122,6 +122,8 @@ ALTER TABLE participantes ADD COLUMN IF NOT EXISTS aceita_comunicacoes BOOLEAN N
 -- Cidade e UF: para divulgar nome e cidade dos contemplados.
 ALTER TABLE participantes ADD COLUMN IF NOT EXISTS cidade TEXT;
 ALTER TABLE participantes ADD COLUMN IF NOT EXISTS uf CHAR(2);
+-- Última consulta à IOTA para este CPF (lib/sincronizacao.ts).
+ALTER TABLE participantes ADD COLUMN IF NOT EXISTS sincronizado_em TIMESTAMPTZ;
 
 -- Dados da compra vindos da IOTA, para auditoria.
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS loja TEXT;

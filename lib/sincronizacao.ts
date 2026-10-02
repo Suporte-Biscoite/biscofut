@@ -1,4 +1,5 @@
 import { campaign } from "./campaign";
+import { query } from "./db";
 import { buscarPedidosDoCliente, situacaoDoPedido, skuParaProduto, type PedidoLoja } from "./iota";
 import { calcularNumeros, produtosElegiveis, type ItemCompra } from "./numeroDaSorte";
 import { transactionsAllowed } from "./promoStatus";
@@ -18,6 +19,7 @@ import { anularPedido, emitirNumerosDoPedido } from "./store";
 export type ResultadoSincronizacao =
   | { status: "ok"; pedidosNovos: number; numerosNovos: number; numerosAnulados: number }
   | { status: "bloqueada" } // antes do CA: a promoção não pode gerar números
+  | { status: "recente" } // consultado há pouco: mostra o que já está no banco
   | { status: "indisponivel" }; // IOTA fora do ar: mostra o que já está no banco
 
 /**
@@ -43,14 +45,46 @@ function itensParticipantes(pedido: PedidoLoja, skus: Record<string, string>): I
     .filter((item) => skusValidos.has(item.sku) && item.quantidade > 0);
 }
 
+/**
+ * Intervalo mínimo entre duas consultas à IOTA para o mesmo CPF. Cada
+ * consulta vira uma chamada à listagem de pedidos da Nexaas, que tem rate
+ * limit: quem entra várias vezes seguidas não multiplica as chamadas. Uma
+ * compra nova aparece em até esse intervalo. IOTA_INTERVALO_MINUTOS muda o
+ * valor (0 desliga — usado nos testes).
+ */
+function intervaloMinutos(): number {
+  const texto = process.env.IOTA_INTERVALO_MINUTOS?.trim();
+  const valor = texto ? Number(texto) : NaN;
+  return Number.isFinite(valor) && valor >= 0 ? valor : 5;
+}
+
+/**
+ * Marca o CPF como consultado agora, se a última consulta foi há mais que o
+ * intervalo. Atômico: dois logins simultâneos do mesmo CPF não consultam os
+ * dois. Devolve false se ainda está dentro do intervalo.
+ */
+async function reservarConsulta(cpf: string): Promise<boolean> {
+  const linhas = await query<{ cpf: string }>(
+    `UPDATE participantes SET sincronizado_em = now()
+     WHERE cpf = $1
+       AND (sincronizado_em IS NULL OR sincronizado_em <= now() - make_interval(mins => $2))
+     RETURNING cpf`,
+    [cpf, intervaloMinutos()]
+  );
+  return linhas.length === 1;
+}
+
 export async function sincronizarPedidos(cpf: string): Promise<ResultadoSincronizacao> {
   if (!participacaoLiberada()) return { status: "bloqueada" };
+  if (!(await reservarConsulta(cpf))) return { status: "recente" };
 
   let pedidos: PedidoLoja[];
   try {
     ({ pedidos } = await buscarPedidosDoCliente(cpf));
   } catch (erro) {
     console.error("[sincronizacao]", (erro as Error).message);
+    // Não conta como consulta feita: o próximo login tenta de novo.
+    await query("UPDATE participantes SET sincronizado_em = NULL WHERE cpf = $1", [cpf]);
     return { status: "indisponivel" };
   }
 
