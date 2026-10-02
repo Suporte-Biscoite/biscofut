@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import BrandLockup from "./BrandLockup";
 import FutiWordmark from "./FutiWordmark";
+import NeyNeyLogo from "./NeyNeyLogo";
 import { campaign } from "@/lib/campaign";
 import { transactionsAllowed } from "@/lib/promoStatus";
 
@@ -36,25 +37,30 @@ export default function Header() {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:gap-6 sm:px-6 md:px-10">
-        <a href="#conteudo" className="flex items-center gap-3" aria-label="Promoção Futi — início">
+        <a href="#conteudo" className="flex shrink-0 items-center gap-3" aria-label="Promoção Futi — início">
           <BrandLockup className="text-[15px]" />
           <span className="hidden h-8 w-px bg-navy/20 sm:block" aria-hidden="true" />
           <FutiWordmark className="hidden h-6 w-auto text-navy sm:block" />
+          {/* NeyNey na barra só onde cabe: tablet (sm–lg) e a partir de 1280 px.
+              No celular ele vai no menu; entre 1024 e 1279 px o menu de seções
+              ocupa a barra toda. Nos dois casos ele também está no hero. */}
+          <span className="hidden h-8 w-px bg-navy/20 sm:block lg:hidden xl:block" aria-hidden="true" />
+          <NeyNeyLogo className="hidden h-6 sm:block lg:hidden xl:block" />
         </a>
 
-        <nav className="ml-auto hidden items-center gap-7 lg:flex" aria-label="Seções da página">
+        <nav className="ml-auto hidden items-center gap-5 lg:flex xl:gap-7" aria-label="Seções da página">
           {nav.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="text-[13px] font-medium text-ink/70 transition-colors hover:text-navy"
+              className="whitespace-nowrap text-[13px] font-medium text-ink/70 transition-colors hover:text-navy"
             >
               {item.label}
             </a>
           ))}
           <Link
             href={campaign.documentos.meusNumeros}
-            className="text-[13px] font-medium text-ink/70 transition-colors hover:text-navy"
+            className="whitespace-nowrap text-[13px] font-medium text-ink/70 transition-colors hover:text-navy"
           >
             Meus números
           </Link>
@@ -87,6 +93,7 @@ export default function Header() {
           className="border-t border-line bg-paper px-4 pb-5 pt-2 sm:px-6 lg:hidden"
           aria-label="Seções da página"
         >
+          <NeyNeyLogo className="mx-auto my-4 h-10 sm:hidden" />
           {nav.map((item) => (
             <a
               key={item.href}
