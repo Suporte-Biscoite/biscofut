@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const ip = hashIp(ipDaRequisicao(request));
   if (
     await excedeuLimite([
-      { chave: `login:ip:${ip}`, maximo: 30, janelaMinutos: 15 },
+      { chave: `login:ip:${ip}`, maximo: 300, janelaMinutos: 15 },
       { chave: `login:cpf:${cpf}`, maximo: 10, janelaMinutos: 15 },
     ])
   ) {

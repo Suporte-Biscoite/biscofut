@@ -10,6 +10,10 @@ import { query } from "./db";
  * em massa) e o "esqueci minha senha" (disparo de e-mail em massa). Conta por
  * IP e por CPF: por IP pega o robô que troca de CPF; por CPF pega quem troca
  * de IP para atacar a mesma conta.
+ *
+ * Os limites por IP são folgados de propósito: operadoras de celular e Wi-Fi
+ * de loja ou shopping põem muitos clientes atrás do mesmo IP. A proteção
+ * de cada conta fica nos limites por CPF, que são apertados.
  */
 
 export type Regra = { chave: string; maximo: number; janelaMinutos: number };

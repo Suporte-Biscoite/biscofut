@@ -80,9 +80,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, mensagem: erro }, { status: 422 });
   }
 
-  // Contra robô cadastrando CPFs em massa a partir da mesma conexão.
+  // Contra robô cadastrando CPFs em massa a partir da mesma conexão. Folgado:
+  // muita gente pode estar atrás do mesmo IP (operadora, Wi-Fi da loja).
   const ip = hashIp(ipDaRequisicao(request));
-  if (await excedeuLimite([{ chave: `cadastro:ip:${ip}`, maximo: 10, janelaMinutos: 60 }])) {
+  if (await excedeuLimite([{ chave: `cadastro:ip:${ip}`, maximo: 100, janelaMinutos: 60 }])) {
     return NextResponse.json({ ok: false, mensagem: MENSAGEM_LIMITE }, { status: 429 });
   }
 

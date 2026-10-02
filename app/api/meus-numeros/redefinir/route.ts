@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const ip = hashIp(ipDaRequisicao(request));
-  if (await excedeuLimite([{ chave: `redefinir:ip:${ip}`, maximo: 20, janelaMinutos: 60 }])) {
+  if (await excedeuLimite([{ chave: `redefinir:ip:${ip}`, maximo: 100, janelaMinutos: 60 }])) {
     return NextResponse.json({ ok: false, mensagem: MENSAGEM_LIMITE }, { status: 429 });
   }
 

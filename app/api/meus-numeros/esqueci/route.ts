@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   const ip = hashIp(ipDaRequisicao(request));
   if (
     await excedeuLimite([
-      { chave: `esqueci:ip:${ip}`, maximo: 10, janelaMinutos: 60 },
+      { chave: `esqueci:ip:${ip}`, maximo: 50, janelaMinutos: 60 },
       { chave: `esqueci:cpf:${cpf}`, maximo: 3, janelaMinutos: 60 },
     ])
   ) {

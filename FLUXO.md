@@ -327,7 +327,7 @@ que não há mais formulário de cadastro de nota.
 
 | Item | Observação |
 | --- | --- |
-| Rate limiting | **feito** (`lib/limite.ts`, no Postgres): login 30/15 min por IP e 10 erros/15 min por CPF (zera no login certo); cadastro 10/h por IP; esqueci 3/h por CPF e 10/h por IP; redefinir 20/h por IP. O IP entra só como hash e sai em 1 dia |
+| Rate limiting | **feito** (`lib/limite.ts`, no Postgres): login 300/15 min por IP e 10 erros/15 min por CPF (zera no login certo); cadastro 100/h por IP; esqueci 3/h por CPF e 50/h por IP; redefinir 100/h por IP. Os limites por IP são folgados porque operadoras e Wi-Fi de loja põem muitos clientes atrás do mesmo IP. O IP entra só como hash e sai em 1 dia |
 | CAPTCHA | contra automação em massa no cadastro, se o rate limiting não bastar |
 | E-mail transacional | **"esqueci minha senha" feito** (`/api/meus-numeros/esqueci` + `/meus-numeros/redefinir`, link de uso único válido por 1 h, via Resend — `RESEND_API_KEY`, `EMAIL_FROM`, `SITE_URL`). Falta: e-mail de confirmação com os números emitidos |
 | Área do participante | `/meus-numeros`, com login por CPF + senha (§3.5), lendo do banco |
