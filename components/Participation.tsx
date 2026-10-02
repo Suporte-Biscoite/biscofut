@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Headline from "./Headline";
+import NeyNeyLogo from "./NeyNeyLogo";
 import { campaign } from "@/lib/campaign";
 
 /**
@@ -22,7 +23,9 @@ export default function Participation() {
           className="mt-4 max-w-2xl text-3xl sm:text-4xl"
         />
 
-        <div className="card mx-auto mt-12 max-w-2xl p-8 sm:p-12">
+        <NeyNeyLogo className="mx-auto mt-12 w-60 sm:w-72" />
+
+        <div className="card mx-auto mt-8 max-w-2xl p-8 sm:p-12">
           <h3 className="text-xl font-black uppercase tracking-headline">
             É só cadastrar seu CPF em Meus números
           </h3>

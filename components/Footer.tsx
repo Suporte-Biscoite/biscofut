@@ -1,10 +1,16 @@
 import BrandLockup from "./BrandLockup";
 import FutiWordmark from "./FutiWordmark";
+import NeyNeyLogo from "./NeyNeyLogo";
 import { campaign, legalFooterText } from "@/lib/campaign";
 
 export default function Footer() {
   return (
     <footer className="bg-ink text-white">
+      {/* Faixa azul fixa: o logo NeyNey tem letras brancas e o rodapé é claro
+          no tema futi. */}
+      <div className="flex justify-center px-6 py-10" style={{ backgroundColor: "#1F3160" }}>
+        <NeyNeyLogo className="w-64 sm:w-80" />
+      </div>
       <div className="mx-auto max-w-6xl px-6 py-16 md:px-10 md:py-20">
         <div className="flex flex-col gap-10 border-b border-white/10 pb-12 md:flex-row md:items-start md:justify-between">
           <div>

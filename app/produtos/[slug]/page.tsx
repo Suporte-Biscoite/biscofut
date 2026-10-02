@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import NeyNeyLogo from "@/components/NeyNeyLogo";
 import { notFound } from "next/navigation";
 import ArenaShowcase from "@/components/ArenaShowcase";
 import BrandLockup from "@/components/BrandLockup";
@@ -23,6 +24,9 @@ import { produtosElegiveis } from "@/lib/numeroDaSorte";
  *  - Futi Collection: banner de estádio e os 6 bonequinhos (CollectionShowcase);
  *  - Futi Arena: banner, caixa com frente/verso e conteúdo do set (ArenaShowcase).
  */
+
+/** Página dos produtos Neymar Jr. na loja online da Biscoitê. */
+const LOJA_BISCOITE = "https://www.biscoite.com.br/neymarjr";
 
 const BANNERS: Record<
   string,
@@ -112,6 +116,16 @@ export default function ProdutoPagina({ params }: { params: { slug: string } }) 
                 números da sorte / unidade
               </span>
             </p>
+            <div>
+              <a
+                href={LOJA_BISCOITE}
+                target="_blank"
+                rel="noopener"
+                className="btn-primary mt-6 whitespace-nowrap"
+              >
+                Comprar na Biscoitê ↗
+              </a>
+            </div>
           </div>
         </div>
 
@@ -142,6 +156,13 @@ export default function ProdutoPagina({ params }: { params: { slug: string } }) 
 
         {produto.slug === "futi-collection" && <CollectionShowcase />}
         {produto.slug === "futi-arena" && <ArenaShowcase />}
+
+        <div className="mt-20 flex flex-col items-center gap-6 border-t border-line pt-12 text-center">
+          <NeyNeyLogo className="w-56 sm:w-64" />
+          <a href={LOJA_BISCOITE} target="_blank" rel="noopener" className="btn-primary whitespace-nowrap">
+            Comprar na Biscoitê ↗
+          </a>
+        </div>
       </main>
       <CookieRain />
     </>

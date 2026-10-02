@@ -1,6 +1,7 @@
 import FutiWordmark from "./FutiWordmark";
 import Headline from "./Headline";
 import HeroVideo from "./HeroVideo";
+import NeyNeyLogo from "./NeyNeyLogo";
 import Sticker from "./Sticker";
 import { campaign, formatDate } from "@/lib/campaign";
 
@@ -92,6 +93,8 @@ export default function Hero() {
             <Stat term="Itens autografados" value={String(quantidade)} />
             <Stat term="Início" value={formatDate(campaign.vigencia.inicio)} />
           </dl>
+
+          <NeyNeyLogo className="mt-10 w-56 sm:w-64" />
         </div>
       </div>
 
