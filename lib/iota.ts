@@ -107,9 +107,15 @@ export type PedidoLoja = {
   itens: Array<{ sku: string; nome: string | null; quantidade: number }>;
 };
 
-export type ClienteLoja = { nome: string | null; pedidos: PedidoLoja[] };
+export type ClienteLoja = {
+  nome: string | null;
+  pedidos: PedidoLoja[];
+  /** Texto `result` da IOTA — explica por que veio vazio (ex.: filtro da campanha). */
+  mensagem: string | null;
+};
 
 type RespostaIota = {
+  result?: string;
   ordersData?: {
     customer?: { document?: string; name?: string | null } | null;
     orders?: Array<{
@@ -148,7 +154,7 @@ export async function buscarPedidosDoCliente(cpf: string): Promise<ClienteLoja> 
 
   // CPF sem pedidos volta 200 com a lista vazia (conferido em 29/09/2026);
   // o 404 fica tratado igual, por garantia.
-  if (resposta.status === 404) return { nome: null, pedidos: [] };
+  if (resposta.status === 404) return { nome: null, pedidos: [], mensagem: "HTTP 404" };
   if (!resposta.ok) {
     throw new ErroIota(`IOTA respondeu HTTP ${resposta.status}.`);
   }
@@ -158,8 +164,10 @@ export async function buscarPedidosDoCliente(cpf: string): Promise<ClienteLoja> 
 
   return {
     nome: dados?.customer?.name?.trim() || null,
+    mensagem: corpo.result ?? null,
+    // Sem pedido, a IOTA às vezes manda um pedido "vazio" (id 0, sem data).
     pedidos: (dados?.orders ?? [])
-      .filter((pedido) => pedido.id !== undefined && pedido.createdAt)
+      .filter((pedido) => pedido.id !== undefined && pedido.id !== 0 && pedido.createdAt)
       .map((pedido) => ({
         id: String(pedido.id),
         status: pedido.status?.trim().toLowerCase() || null,

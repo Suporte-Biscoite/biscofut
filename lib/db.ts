@@ -151,6 +151,15 @@ CREATE TABLE IF NOT EXISTS tentativas (
   criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS tentativas_chave_idx ON tentativas (chave, criado_em);
+
+-- Vigia da integração (lib/monitor.ts): último resultado de cada verificação.
+CREATE TABLE IF NOT EXISTS monitor (
+  chave         TEXT PRIMARY KEY,
+  ok            BOOLEAN NOT NULL,
+  detalhe       TEXT NOT NULL,
+  verificado_em TIMESTAMPTZ NOT NULL DEFAULT now(),
+  mudou_em      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 `;
 
 /**

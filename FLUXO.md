@@ -212,6 +212,9 @@ Participante ──cadastro / login──> /api/meus-numeros ┘──> lib/sinc
 | `IOTA_SKUS` | opcional — substitui os SKUs padrão do código (Card 4001292, Collection 4001293, Arena 4001261); formato `4001292:FUTI-CARD,4001293:FUTI-COL,4001261:FUTI-ARE` |
 | `IOTA_CAMPAIGN` | opcional, padrão `NEYMARJR` |
 | `IOTA_API_URL` | opcional, padrão `https://api.hub.iotaapp.com.br/provider/biscoite/campaigns` |
+| `IOTA_CPF_TESTE` | CPF de uma compra de teste de produto da campanha, entregue e não cancelada — usado pelo vigia |
+| `ALERTA_EMAIL` | e-mails (separados por vírgula) que recebem o alerta do vigia |
+| `CRON_SECRET` | segredo que a Vercel manda no cron; sem ele o vigia não roda |
 
 **Formato da resposta** (conferido em 29/09/2026): `ordersData.customer`
 (`document`, `name`, `id`) e `ordersData.orders[]` (`id`,
@@ -230,6 +233,14 @@ esperam um estado final; status fora da lista vai para o log.
 
 **Números por produto** (`lib/numeroDaSorte.ts`): Futi Card = 1, Futi
 Collection = 6, Futi Arena = 25. Card + Arena na mesma compra = 26 números.
+
+**Vigia e diagnóstico** (`lib/monitor.ts`): a cada 15 minutos o cron da
+Vercel (`vercel.json`) consulta a IOTA com `IOTA_CPF_TESTE` e manda e-mail
+para `ALERTA_EMAIL` quando a compra de referência some ou volta. No
+`/admin`, a aba Diagnóstico mostra o que a IOTA devolve para qualquer CPF e
+explica a causa provável (CPF não vinculado na Nexaas × filtro da campanha na
+IOTA). Em 05/10/2026 o filtro da campanha NEYMARJR na IOTA descartava o Futi
+Card — foi o que motivou o vigia.
 
 **Login** é por CPF + senha (`app/api/meus-numeros/route.ts`), com a mesma
 mensagem de erro para CPF sem cadastro e senha errada. Senha com scrypt em

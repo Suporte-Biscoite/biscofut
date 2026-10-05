@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import BrandLockup from "@/components/BrandLockup";
 import { Field, Input } from "@/components/ui/Field";
 import { campaign } from "@/lib/campaign";
@@ -41,7 +41,7 @@ type Ficha = {
   pedidos: Array<{ id: string; loja: string | null; compradoEm: string | null; status: string | null; numeros: number; cancelado: boolean }>;
 };
 
-type Aba = "apuracao" | "numero" | "cpf";
+type Aba = "apuracao" | "numero" | "cpf" | "diagnostico";
 
 async function chamar<T>(url: string, init?: RequestInit): Promise<{ ok: boolean; mensagem?: string } & T> {
   try {
@@ -65,6 +65,7 @@ const nascimento = (iso: string | null) => (iso ? iso.split("-").reverse().join(
 export default function Admin() {
   const [logado, setLogado] = useState<boolean | null>(null);
   const [aba, setAba] = useState<Aba>("apuracao");
+  const expirou = useCallback(() => setLogado(false), []);
 
   useEffect(() => {
     chamar<object>("/api/admin/login").then((r) => setLogado(r.ok));
@@ -98,12 +99,13 @@ export default function Admin() {
         {logado === false && <Login onEntrar={() => setLogado(true)} />}
         {logado && (
           <>
-            <div className="inline-flex items-center gap-1 rounded-full border border-line bg-white p-1 text-xs">
+            <div className="inline-flex flex-wrap items-center gap-1 rounded-full border border-line bg-white p-1 text-xs">
               {(
                 [
                   ["apuracao", "Apuração"],
                   ["numero", "Buscar número"],
                   ["cpf", "Buscar CPF"],
+                  ["diagnostico", "Diagnóstico"],
                 ] as const
               ).map(([valor, rotulo]) => (
                 <button
@@ -122,6 +124,7 @@ export default function Admin() {
             {aba === "apuracao" && <Apuracao onSessaoExpirada={() => setLogado(false)} />}
             {aba === "numero" && <BuscarNumero onSessaoExpirada={() => setLogado(false)} />}
             {aba === "cpf" && <BuscarCpf onSessaoExpirada={() => setLogado(false)} />}
+            {aba === "diagnostico" && <Diagnostico onSessaoExpirada={expirou} />}
           </>
         )}
       </main>
@@ -435,6 +438,146 @@ function BuscarCpf({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
               ))}
             </ul>
           </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+type DiagnosticoIota = {
+  ok: boolean;
+  resumo: string;
+  explicacao: string;
+  mensagemIota: string | null;
+  pedidos: Array<{
+    id: string;
+    status: string | null;
+    situacao: string;
+    loja: string | null;
+    criadoEm: string;
+    itens: Array<{ sku: string; nome: string | null; quantidade: number; daCampanha: boolean }>;
+  }>;
+};
+
+type EstadoVigia = { ok: boolean; detalhe: string; verificadoEm: string; mudouEm: string };
+
+const SITUACAO: Record<string, string> = {
+  valido: "gera números",
+  cancelado: "cancelado — anula números",
+  pendente: "em andamento — aguardando",
+  desconhecido: "status desconhecido",
+};
+
+function Diagnostico({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
+  const [vigia, setVigia] = useState<EstadoVigia | null>(null);
+  const [verificando, setVerificando] = useState(false);
+  const [cpf, setCpf] = useState("");
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const [diag, setDiag] = useState<DiagnosticoIota | null>(null);
+
+  useEffect(() => {
+    chamar<{ vigia: EstadoVigia | null }>("/api/admin/diagnostico").then((r) => {
+      if (r.ok) setVigia(r.vigia);
+      else if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
+    });
+  }, [onSessaoExpirada]);
+
+  async function verificarAgora() {
+    setVerificando(true);
+    const r = await chamar<{ vigia: EstadoVigia }>("/api/admin/diagnostico", { method: "POST" });
+    setVerificando(false);
+    if (r.ok) setVigia(r.vigia);
+    else if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
+  }
+
+  async function diagnosticar(e: FormEvent) {
+    e.preventDefault();
+    setCarregando(true);
+    setErro("");
+    const r = await chamar<{ diagnostico: DiagnosticoIota }>(`/api/admin/diagnostico?cpf=${encodeURIComponent(cpf)}`);
+    setCarregando(false);
+    if (r.ok) setDiag(r.diagnostico);
+    else if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
+    else setErro(r.mensagem ?? "Não foi possível consultar.");
+  }
+
+  return (
+    <section className="mt-8 space-y-8">
+      <div className="card p-6 sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-sm font-black uppercase tracking-label">Vigia da integração (a cada 15 min)</h2>
+          <button type="button" onClick={verificarAgora} disabled={verificando} className="btn-secondary">
+            {verificando ? "Verificando…" : "Verificar agora"}
+          </button>
+        </div>
+        {vigia ? (
+          <div className="mt-4 space-y-2 text-sm">
+            <p className={`font-black ${vigia.ok ? "text-navy" : "text-alert"}`}>
+              {vigia.ok ? "✅ Funcionando" : "🔴 Com problema"}
+            </p>
+            <p className="leading-relaxed text-ink/75">{vigia.detalhe}</p>
+            <p className="text-xs text-ink/50">
+              Última verificação: {data(vigia.verificadoEm)} · neste estado desde {data(vigia.mudouEm)}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-ink/60">Ainda não houve verificação. Clique em &quot;Verificar agora&quot;.</p>
+        )}
+      </div>
+
+      <form onSubmit={diagnosticar} className="card flex flex-wrap items-end gap-4 p-6 sm:p-8" noValidate>
+        <p className="w-full text-sm leading-relaxed text-ink/70">
+          Cliente reclamou que a compra não apareceu? Digite o CPF para ver exatamente o que a IOTA
+          devolve, e o porquê.
+        </p>
+        <Field id="cpf-diag" label="CPF">
+          <Input
+            id="cpf-diag"
+            inputMode="numeric"
+            maxLength={14}
+            value={cpf}
+            placeholder="000.000.000-00"
+            onChange={(e) => setCpf(formatCPF(e.target.value))}
+          />
+        </Field>
+        <button type="submit" disabled={carregando} className="btn-primary">
+          {carregando ? "Consultando…" : "Consultar IOTA"}
+        </button>
+      </form>
+
+      {erro && <Erro>{erro}</Erro>}
+
+      {diag && (
+        <div className="card space-y-4 p-6 sm:p-8">
+          <p className={`font-black ${diag.ok ? "text-navy" : "text-alert"}`}>
+            {diag.ok ? "✅ " : "🔴 "}
+            {diag.resumo}
+          </p>
+          <p className="text-sm leading-relaxed text-ink/75">{diag.explicacao}</p>
+          <p className="text-xs text-ink/50">Resposta da IOTA: {diag.mensagemIota ?? "—"}</p>
+          {diag.pedidos.length > 0 && (
+            <ul className="space-y-3 text-sm text-ink/75">
+              {diag.pedidos.map((p) => (
+                <li key={p.id} className="rounded-xl border border-line p-4">
+                  <p className="font-black text-navy">
+                    Pedido {p.id} · {p.loja ?? "loja não informada"} · {data(p.criadoEm)}
+                  </p>
+                  <p className="mt-1">
+                    Status: {p.status ?? "—"} ({SITUACAO[p.situacao] ?? p.situacao})
+                  </p>
+                  <ul className="mt-1">
+                    {p.itens.map((i, k) => (
+                      <li key={k}>
+                        {i.daCampanha ? "✅" : "▫️"} {i.sku} × {i.quantidade} {i.nome ?? ""}
+                        {i.daCampanha ? "" : " (não é da campanha)"}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </section>
