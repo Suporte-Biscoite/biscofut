@@ -77,7 +77,7 @@ export async function diagnosticarCpf(cpf: string): Promise<Diagnostico> {
       ? "A IOTA acha o cliente, mas filtra os pedidos (nenhum com itens da campanha)."
       : "A IOTA não encontra nenhum pedido para este CPF.",
     explicacao: filtrouCampanha
-      ? "O cliente tem pedidos na Nexaas, mas nenhum passou no filtro da campanha na IOTA. Se a compra foi de Futi Card, Collection ou Arena, o filtro da campanha NEYMARJR na IOTA está errado — falar com o Jhone (SKUs 4001292, 4001293, 4001261)."
+      ? "O cliente tem pedidos na Nexaas, mas nenhum passou no filtro da campanha na IOTA. Causas comuns: a compra não tem nota fiscal autorizada (NFC-e com erro ou pendente — veja o rodapé do cupom); a compra não foi de Futi Card, Collection ou Arena; ou o filtro da campanha NEYMARJR na IOTA precisa de ajuste (SKUs 4001292, 4001293, 4001261) — falar com o Jhone."
       : "Não há pedido vinculado a este CPF na Nexaas. Provável: o CPF entrou só como \"CPF na nota\" (sem identificar o cliente no PDV) ou foi digitado errado no caixa. Procurar a venda na Nexaas pela loja e horário.",
     mensagemIota: cliente.mensagem,
     pedidos,
