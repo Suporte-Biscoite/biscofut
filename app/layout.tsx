@@ -12,6 +12,7 @@ import "@fontsource/montserrat/700.css";
 import "./globals.css";
 import { transactionsAllowed } from "@/lib/promoStatus";
 import { TEMA } from "@/lib/theme";
+import WhatsAppFlutuante from "@/components/WhatsAppFlutuante";
 
 export const metadata: Metadata = {
   title: "Concorra a uma camiseta autografada pelo Neymar Jr. | Promoção Futi",
@@ -50,6 +51,7 @@ export default function RootLayout({
           Pular para o conteúdo
         </a>
         {children}
+        <WhatsAppFlutuante />
       </body>
     </html>
   );
