@@ -363,12 +363,16 @@ function BuscarCpf({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
   const [cpf, setCpf] = useState("");
   const [erro, setErro] = useState("");
   const [ficha, setFicha] = useState<Ficha | null | undefined>(undefined);
+  const [compras, setCompras] = useState<string | null>(null);
 
   async function buscar(e: FormEvent) {
     e.preventDefault();
     setErro("");
-    const r = await chamar<{ ficha: Ficha | null }>(`/api/admin/cpf?cpf=${encodeURIComponent(cpf)}`);
-    if (r.ok) setFicha(r.ficha);
+    const r = await chamar<{ ficha: Ficha | null; compras: string | null }>(`/api/admin/cpf?cpf=${encodeURIComponent(cpf)}`);
+    if (r.ok) {
+      setFicha(r.ficha);
+      setCompras(r.compras);
+    }
     else if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
     else setErro(r.mensagem ?? "Não foi possível buscar.");
   }
@@ -392,6 +396,12 @@ function BuscarCpf({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
       </form>
       {erro && <Erro>{erro}</Erro>}
       {ficha === null && <Erro>Nenhum participante com este CPF.</Erro>}
+      {ficha && !ficha.cadastradoEm && (
+        <Erro>Este CPF ainda não se cadastrou em Meus Números: as compras só viram números depois do cadastro.</Erro>
+      )}
+      {compras === "indisponivel" && (
+        <Erro>Não foi possível consultar a IOTA agora — a ficha mostra o que já estava no banco. Veja a aba Diagnóstico.</Erro>
+      )}
       {ficha && (
         <div className="card mt-8 space-y-6 p-6 sm:p-8">
           <Contato

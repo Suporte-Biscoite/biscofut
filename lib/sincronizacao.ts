@@ -74,9 +74,20 @@ async function reservarConsulta(cpf: string): Promise<boolean> {
   return linhas.length === 1;
 }
 
-export async function sincronizarPedidos(cpf: string): Promise<ResultadoSincronizacao> {
+/**
+ * `forcar`: ignora o intervalo de 5 minutos — usado pelo atendimento no
+ * /admin, que precisa da situação atualizada na hora.
+ */
+export async function sincronizarPedidos(
+  cpf: string,
+  { forcar = false }: { forcar?: boolean } = {}
+): Promise<ResultadoSincronizacao> {
   if (!participacaoLiberada()) return { status: "bloqueada" };
-  if (!(await reservarConsulta(cpf))) return { status: "recente" };
+  if (forcar) {
+    await query("UPDATE participantes SET sincronizado_em = now() WHERE cpf = $1", [cpf]);
+  } else if (!(await reservarConsulta(cpf))) {
+    return { status: "recente" };
+  }
 
   let pedidos: PedidoLoja[];
   try {
