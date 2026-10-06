@@ -153,6 +153,23 @@ CREATE TABLE IF NOT EXISTS tentativas (
 CREATE INDEX IF NOT EXISTS tentativas_chave_idx ON tentativas (chave, criado_em);
 
 -- Vigia da integração (lib/monitor.ts): último resultado de cada verificação.
+-- Lançamentos e anulações feitos à mão no /admin (lib/manual.ts): quem fez,
+-- quando, com que comprovante. A chave da NFC-e não se repete.
+CREATE TABLE IF NOT EXISTS ajustes_manuais (
+  id          BIGSERIAL PRIMARY KEY,
+  tipo        TEXT NOT NULL CHECK (tipo IN ('lancamento', 'anulacao')),
+  cpf         CHAR(11) NOT NULL,
+  pedido      TEXT NOT NULL,
+  chave_nfce  TEXT,
+  itens       JSONB,
+  numeros     INT NOT NULL DEFAULT 0,
+  operador    TEXT NOT NULL,
+  observacao  TEXT,
+  criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ajustes_chave_nfce_idx
+  ON ajustes_manuais (chave_nfce) WHERE tipo = 'lancamento' AND chave_nfce IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS monitor (
   chave         TEXT PRIMARY KEY,
   ok            BOOLEAN NOT NULL,

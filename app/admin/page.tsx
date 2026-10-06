@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import BrandLockup from "@/components/BrandLockup";
 import { Field, Input } from "@/components/ui/Field";
 import { campaign } from "@/lib/campaign";
+import { CATALOGO } from "@/lib/catalogo";
 import { formatCPF, formatPhone } from "@/lib/masks";
 
 /**
@@ -38,7 +39,15 @@ type Ficha = {
   cadastradoEm: string | null;
   aceitaComunicacoes: boolean;
   numeros: Array<{ numero: string; pedido: string; anulado: boolean }>;
-  pedidos: Array<{ id: string; loja: string | null; compradoEm: string | null; status: string | null; numeros: number; cancelado: boolean }>;
+  pedidos: Array<{
+    id: string;
+    loja: string | null;
+    compradoEm: string | null;
+    status: string | null;
+    numeros: number;
+    cancelado: boolean;
+    lancadoPor: string | null;
+  }>;
 };
 
 type Aba = "apuracao" | "numero" | "cpf" | "diagnostico" | "relatorio";
@@ -367,8 +376,8 @@ function BuscarCpf({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
   const [ficha, setFicha] = useState<Ficha | null | undefined>(undefined);
   const [compras, setCompras] = useState<string | null>(null);
 
-  async function buscar(e: FormEvent) {
-    e.preventDefault();
+  async function buscar(e?: FormEvent) {
+    e?.preventDefault();
     setErro("");
     const r = await chamar<{ ficha: Ficha | null; compras: string | null }>(`/api/admin/cpf?cpf=${encodeURIComponent(cpf)}`);
     if (r.ok) {
@@ -425,13 +434,20 @@ function BuscarCpf({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
               {ficha.pedidos.length === 0 && <li>Nenhum pedido com produto participante.</li>}
               {ficha.pedidos.map((p) => (
                 <li key={p.id} className={p.cancelado ? "line-through opacity-60" : undefined}>
-                  Pedido {p.id} · {p.loja ?? "loja não informada"} · {data(p.compradoEm)} · {p.numeros} números
+                  Pedido {p.id} · {p.loja ?? "loja não informada"} · {data(p.compradoEm)} · {p.numeros} {p.numeros === 1 ? "número" : "números"}
                   {p.status ? ` · ${p.status}` : ""}
                   {p.cancelado ? " · cancelado" : ""}
+                  {p.lancadoPor ? ` · lançado à mão por ${p.lancadoPor}` : ""}
+                  {!p.cancelado && (
+                    <BotaoAnular cpf={ficha.cpf} pedido={p.id} onFeito={() => buscar()} onSessaoExpirada={onSessaoExpirada} />
+                  )}
                 </li>
               ))}
             </ul>
           </div>
+          {ficha.cadastradoEm && (
+            <LancamentoManual cpf={ficha.cpf} onFeito={() => buscar()} onSessaoExpirada={onSessaoExpirada} />
+          )}
           <div>
             <h3 className="text-sm font-black uppercase tracking-label">
               Números ({ficha.numeros.filter((n) => !n.anulado).length} válidos)
@@ -777,6 +793,208 @@ function Relatorio({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
         )}
       </div>
     </section>
+  );
+}
+
+/** Nome de quem está operando o admin, lembrado só neste navegador. */
+function useOperador(): [string, (v: string) => void] {
+  const [operador, setOperador] = useState("");
+  useEffect(() => {
+    try {
+      setOperador(localStorage.getItem("futi-admin-operador") ?? "");
+    } catch {}
+  }, []);
+  const salvar = (v: string) => {
+    setOperador(v);
+    try {
+      localStorage.setItem("futi-admin-operador", v);
+    } catch {}
+  };
+  return [operador, salvar];
+}
+
+function LancamentoManual({
+  cpf,
+  onFeito,
+  onSessaoExpirada,
+}: {
+  cpf: string;
+  onFeito: () => void;
+  onSessaoExpirada: () => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [operador, setOperador] = useOperador();
+  const [pedido, setPedido] = useState("");
+  const [chave, setChave] = useState("");
+  const [dataCompra, setDataCompra] = useState("");
+  const [loja, setLoja] = useState("");
+  const [itens, setItens] = useState([{ sku: CATALOGO[0].sku, quantidade: 1 }]);
+  const [observacao, setObservacao] = useState("");
+  const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  async function lancar(e: FormEvent) {
+    e.preventDefault();
+    setErro("");
+    setSucesso("");
+    setEnviando(true);
+    const r = await chamar<{ numeros: Array<{ numero: string }>; excedente: number }>("/api/admin/manual", {
+      method: "POST",
+      body: JSON.stringify({ cpf, pedido, chaveNfce: chave, data: dataCompra, loja, itens, operador, observacao }),
+    });
+    setEnviando(false);
+    if (r.ok) {
+      setSucesso(
+        `${r.numeros.length} número(s) gerado(s): ${r.numeros.map((n) => n.numero).join(", ") || "—"}` +
+          (r.excedente ? ` · ${r.excedente} não gerado(s) por causa do limite de 200 por CPF` : "")
+      );
+      setPedido("");
+      setChave("");
+      setObservacao("");
+      setItens([{ sku: CATALOGO[0].sku, quantidade: 1 }]);
+      setAberto(false);
+      onFeito();
+    } else if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
+    else setErro(r.mensagem ?? "Não foi possível lançar.");
+  }
+
+  if (!aberto) {
+    return (
+      <div className="space-y-3">
+        {sucesso && (
+          <p role="status" className="rounded-xl bg-sky/15 px-4 py-3 text-sm text-ink/80">
+            ✅ {sucesso}
+          </p>
+        )}
+        <button type="button" onClick={() => setAberto(true)} className="btn-secondary">
+          + Lançar compra manualmente
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={lancar} className="space-y-4 rounded-2xl border border-line p-5" noValidate>
+      <h3 className="text-sm font-black uppercase tracking-label">Lançar compra manualmente</h3>
+      <p className="text-xs leading-relaxed text-ink/60">
+        Para venda feita sem o CPF no caixa (&quot;Consumidor: não identificado&quot;). Confira o cupom
+        que o cliente enviou: número do pedido, data, produtos e chave da NFC-e. O mesmo pedido nunca gera
+        números duas vezes.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id="man-pedido" label="Nº do pedido (Nexaas / topo do cupom)">
+          <Input id="man-pedido" inputMode="numeric" value={pedido} onChange={(e) => setPedido(e.target.value)} placeholder="4808933" />
+        </Field>
+        <Field id="man-data" label="Data da compra">
+          <Input id="man-data" type="date" value={dataCompra} onChange={(e) => setDataCompra(e.target.value)} />
+        </Field>
+        <Field id="man-chave" label="Chave da NFC-e (44 dígitos)">
+          <Input id="man-chave" inputMode="numeric" value={chave} onChange={(e) => setChave(e.target.value)} placeholder="3526 1039 2672 …" />
+        </Field>
+        <Field id="man-loja" label="Loja">
+          <Input id="man-loja" value={loja} onChange={(e) => setLoja(e.target.value)} placeholder="BISCOITE TRAILER" />
+        </Field>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[11px] font-black uppercase tracking-label text-steel">Produtos do cupom</p>
+        {itens.map((item, i) => (
+          <div key={i} className="flex flex-wrap items-center gap-2">
+            <select
+              value={item.sku}
+              onChange={(e) => setItens((atual) => atual.map((x, j) => (j === i ? { ...x, sku: e.target.value } : x)))}
+              className="min-w-0 flex-1 rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink"
+            >
+              {CATALOGO.map((p) => (
+                <option key={p.sku} value={p.sku}>
+                  {p.sku} — {p.nome}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              min={1}
+              value={item.quantidade}
+              onChange={(e) => setItens((atual) => atual.map((x, j) => (j === i ? { ...x, quantidade: Number(e.target.value) } : x)))}
+              aria-label="Quantidade"
+              className="w-20 rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink"
+            />
+            {itens.length > 1 && (
+              <button type="button" onClick={() => setItens((atual) => atual.filter((_, j) => j !== i))} className="text-xs font-black text-alert">
+                remover
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setItens((atual) => [...atual, { sku: CATALOGO[0].sku, quantidade: 1 }])}
+          className="text-xs font-black uppercase tracking-label text-steel hover:text-navy"
+        >
+          + outro produto
+        </button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id="man-operador" label="Seu nome (quem está lançando)">
+          <Input id="man-operador" value={operador} onChange={(e) => setOperador(e.target.value)} />
+        </Field>
+        <Field id="man-obs" label="Observação">
+          <Input id="man-obs" value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Cupom recebido pelo WhatsApp" />
+        </Field>
+      </div>
+
+      {erro && <Erro>{erro}</Erro>}
+
+      <div className="flex flex-wrap gap-3">
+        <button type="submit" disabled={enviando} className="btn-primary">
+          {enviando ? "Lançando…" : "Lançar e gerar números"}
+        </button>
+        <button type="button" onClick={() => setAberto(false)} className="btn-secondary">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function BotaoAnular({
+  cpf,
+  pedido,
+  onFeito,
+  onSessaoExpirada,
+}: {
+  cpf: string;
+  pedido: string;
+  onFeito: () => void;
+  onSessaoExpirada: () => void;
+}) {
+  const [operador] = useOperador();
+  const [erro, setErro] = useState("");
+
+  async function anular() {
+    const motivo = window.prompt(
+      `Anular os números do pedido ${pedido}? Eles saem da conta do cliente e do sorteio (não dá para desfazer).\n\nMotivo:`
+    );
+    if (motivo === null) return;
+    const quem = operador || window.prompt("Seu nome (quem está anulando):") || "";
+    const r = await chamar<{ anulados: number }>("/api/admin/manual/anular", {
+      method: "POST",
+      body: JSON.stringify({ cpf, pedido, operador: quem, observacao: motivo }),
+    });
+    if (r.ok) onFeito();
+    else if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
+    else setErro(r.mensagem ?? "Não foi possível anular.");
+  }
+
+  return (
+    <>
+      <button type="button" onClick={anular} className="ml-2 text-xs font-black uppercase tracking-label text-alert no-underline">
+        anular
+      </button>
+      {erro && <span className="ml-2 text-xs text-alert">{erro}</span>}
+    </>
   );
 }
 

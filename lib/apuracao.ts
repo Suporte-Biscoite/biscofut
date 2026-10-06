@@ -164,6 +164,8 @@ export type FichaParticipante = {
     status: string | null;
     numeros: number;
     cancelado: boolean;
+    /** Lançado à mão no admin (lib/manual.ts): quem lançou. */
+    lancadoPor: string | null;
   }>;
 };
 
@@ -197,9 +199,12 @@ export async function fichaDoParticipante(cpf: string): Promise<FichaParticipant
     status: string | null;
     numeros_concedidos: number;
     cancelado_em: Date | null;
+    lancado_por: string | null;
   }>(
-    `SELECT referencia, loja, comprado_em, status, numeros_concedidos, cancelado_em
-     FROM pedidos WHERE cpf = $1 ORDER BY comprado_em NULLS LAST, recebido_em`,
+    `SELECT pe.referencia, pe.loja, pe.comprado_em, pe.status, pe.numeros_concedidos, pe.cancelado_em,
+       (SELECT a.operador FROM ajustes_manuais a
+         WHERE a.tipo = 'lancamento' AND a.pedido = pe.referencia LIMIT 1) AS lancado_por
+     FROM pedidos pe WHERE pe.cpf = $1 ORDER BY pe.comprado_em NULLS LAST, pe.recebido_em`,
     [cpf]
   );
 
@@ -225,6 +230,7 @@ export async function fichaDoParticipante(cpf: string): Promise<FichaParticipant
       status: pe.status,
       numeros: pe.numeros_concedidos,
       cancelado: pe.cancelado_em !== null,
+      lancadoPor: pe.lancado_por,
     })),
   };
 }
