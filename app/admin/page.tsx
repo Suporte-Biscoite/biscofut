@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import BrandLockup from "@/components/BrandLockup";
 import { Field, Input } from "@/components/ui/Field";
 import { campaign } from "@/lib/campaign";
@@ -883,15 +883,30 @@ function LancamentoManual({
         números duas vezes.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="man-pedido" label="Nº do pedido (Nexaas / topo do cupom)">
-          <Input id="man-pedido" inputMode="numeric" value={pedido} onChange={(e) => setPedido(e.target.value)} placeholder="4808933" />
+        <Field
+          id="man-pedido"
+          label="Nº do PEDIDO Nexaas"
+          hint='Topo do cupom: "PEDIDO: 4808933" (7 dígitos). Não é o número da NFC-e.'
+        >
+          <Input id="man-pedido" inputMode="numeric" value={pedido} hasHint onChange={(e) => setPedido(e.target.value)} placeholder="4808933" />
         </Field>
         <Field id="man-data" label="Data da compra">
           <Input id="man-data" type="date" value={dataCompra} onChange={(e) => setDataCompra(e.target.value)} />
         </Field>
-        <Field id="man-chave" label="Chave da NFC-e (44 dígitos)">
-          <Input id="man-chave" inputMode="numeric" value={chave} onChange={(e) => setChave(e.target.value)} placeholder="3526 1039 2672 …" />
+        <Field
+          id="man-chave"
+          label="Chave da NFC-e ou link do QR Code"
+          hint="Confere se a nota é da Biscoitê e do mês da compra."
+        >
+          <Input
+            id="man-chave"
+            value={chave}
+            hasHint
+            onChange={(e) => setChave(e.target.value)}
+            placeholder="Cole a chave (44 dígitos) ou o link do QR Code"
+          />
         </Field>
+        <LerQrCode onLido={setChave} />
         <Field id="man-loja" label="Loja">
           <Input id="man-loja" value={loja} onChange={(e) => setLoja(e.target.value)} placeholder="BISCOITE TRAILER" />
         </Field>
@@ -956,6 +971,75 @@ function LancamentoManual({
         </button>
       </div>
     </form>
+  );
+}
+
+type DetectorDeCodigo = { detect(fonte: HTMLVideoElement): Promise<Array<{ rawValue: string }>> };
+
+/**
+ * Lê o QR Code do cupom pela câmera, nos navegadores que têm BarcodeDetector
+ * (Chrome no Android, por exemplo). Onde não tem, o botão nem aparece — dá
+ * para colar o link do QR Code no campo.
+ */
+function LerQrCode({ onLido }: { onLido: (texto: string) => void }) {
+  const [suportado, setSuportado] = useState(false);
+  const [lendo, setLendo] = useState(false);
+  const [erro, setErro] = useState("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    setSuportado("BarcodeDetector" in window && !!navigator.mediaDevices?.getUserMedia);
+  }, []);
+
+  useEffect(() => {
+    if (!lendo) return;
+    let ativo = true;
+    let stream: MediaStream | null = null;
+    (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        const video = videoRef.current!;
+        video.srcObject = stream;
+        await video.play();
+        const Detector = (window as unknown as { BarcodeDetector: new (o: { formats: string[] }) => DetectorDeCodigo }).BarcodeDetector;
+        const detector = new Detector({ formats: ["qr_code"] });
+        while (ativo) {
+          const [codigo] = await detector.detect(video).catch(() => []);
+          if (codigo?.rawValue) {
+            onLido(codigo.rawValue);
+            setLendo(false);
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 300));
+        }
+      } catch {
+        setErro("Não foi possível abrir a câmera. Cole o link do QR Code no campo.");
+        setLendo(false);
+      }
+    })();
+    return () => {
+      ativo = false;
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, [lendo, onLido]);
+
+  if (!suportado) return null;
+  return (
+    <div className="sm:col-span-2">
+      {lendo ? (
+        <div className="space-y-2">
+          <video ref={videoRef} muted playsInline className="w-full max-w-sm rounded-xl" />
+          <button type="button" onClick={() => setLendo(false)} className="btn-secondary">
+            Fechar câmera
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => { setErro(""); setLendo(true); }} className="btn-secondary">
+          📷 Ler QR Code do cupom
+        </button>
+      )}
+      {erro && <p className="mt-2 text-xs text-alert">{erro}</p>}
+    </div>
   );
 }
 

@@ -1,6 +1,7 @@
 import { campaign } from "./campaign";
 import { query } from "./db";
 import { skuParaProduto, skusAConfirmar } from "./iota";
+import { validarChave } from "./nfce";
 import { calcularNumeros, produtosElegiveis, type ItemCompra } from "./numeroDaSorte";
 import { anularPedido, emitirNumerosDoPedido, type NumeroEmitido } from "./store";
 
@@ -39,17 +40,33 @@ const skusValidos = new Set(produtosElegiveis.map((p) => p.sku));
 
 export async function lancarCompraManual(d: DadosLancamento): Promise<ResultadoLancamento> {
   const pedido = d.pedido.replace(/\D/g, "");
-  const chave = (d.chaveNfce ?? "").replace(/\D/g, "") || null;
   const operador = d.operador.trim();
 
-  if (!pedido) return { ok: false, mensagem: "Informe o número do pedido da Nexaas." };
-  if (chave && chave.length !== 44) return { ok: false, mensagem: "A chave da NFC-e tem 44 dígitos." };
+  // O número do pedido da Nexaas tem 7 dígitos ou mais (ex.: 4808933) e sai no
+  // topo do cupom ("PEDIDO: …"). Não confundir com o número da NFC-e, mais
+  // curto: se o pedido for lançado com o número errado e depois chegar pela
+  // IOTA com o número certo, os números sairiam duas vezes.
+  if (pedido.length < 7) {
+    return { ok: false, mensagem: "Use o número do PEDIDO da Nexaas (7 dígitos ou mais, no topo do cupom: \"PEDIDO: …\"), não o número da NFC-e." };
+  }
   if (operador.length < 2) return { ok: false, mensagem: "Informe o seu nome (quem está lançando)." };
 
   const { inicio, fim } = campaign.vigencia;
   const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.data) || (inicio && d.data < inicio) || (fim && d.data > fim) || d.data > hoje) {
     return { ok: false, mensagem: "Data da compra fora do período da promoção." };
+  }
+
+  // Chave da NFC-e (ou o link do QR Code do cupom): opcional, mas se vier
+  // tem que ser válida, da Biscoitê e do mesmo mês da compra.
+  let chave: string | null = null;
+  if ((d.chaveNfce ?? "").trim()) {
+    const validacao = validarChave(d.chaveNfce!, d.data);
+    if (!validacao.ok) return { ok: false, mensagem: validacao.mensagem };
+    if (validacao.dados.numero === String(Number(pedido))) {
+      return { ok: false, mensagem: `${pedido} é o número da NFC-e, não do pedido. Use o número do PEDIDO da Nexaas (topo do cupom).` };
+    }
+    chave = validacao.dados.chave;
   }
 
   const [participante] = await query<{ cadastrado: boolean }>(
