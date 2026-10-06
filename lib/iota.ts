@@ -21,28 +21,91 @@ const URL_PADRAO = "https://api.hub.iotaapp.com.br/provider/biscoite/campaigns";
 const TIMEOUT_MS = 10_000;
 
 /**
- * De: SKU do produto no PDV. Para: SKU usado em produtosElegiveis
- * (lib/numeroDaSorte.ts). SKUs confirmados em 29/09/2026.
+ * De: SKU do PDV. Para: quantas unidades de cada produto participante
+ * (lib/numeroDaSorte.ts) vêm dentro dele. Os números da sorte saem por
+ * unidade: "Futi Card Dupla" são 2 Cards, logo 2 números por kit vendido.
  *
- * A variável IOTA_SKUS, se preenchida, substitui esta lista — formato
- * `4001292:FUTI-CARD,4001293:FUTI-COL,4001261:FUTI-ARE`. Serve para
- * cadastrar um SKU novo (outra embalagem, por exemplo) sem mexer no código.
+ * SKUs avulsos confirmados em 29/09/2026; kits em 06/10/2026. Kit que não
+ * está aqui não gera número — e o pedido nem é registrado, então quando ele
+ * for cadastrado as compras anteriores geram números no próximo login. Não
+ * cadastrar kit com composição duvidosa: pedido que já gerou número não é
+ * recalculado.
+ *
+ * A variável IOTA_SKUS, se preenchida, acrescenta ou substitui SKUs sem
+ * mexer no código — formato `sku:PRODUTO*unidades+PRODUTO*unidades`,
+ * separados por vírgula. Ex.: `5000025:FUTI-CARD*6+FUTI-COL*1+FUTI-ARE*1`.
+ * O `*1` pode ser omitido (`4001292:FUTI-CARD`).
  */
-const SKUS_PADRAO: Record<string, string> = {
-  "4001292": "FUTI-CARD",
-  "4001293": "FUTI-COL",
-  "4001261": "FUTI-ARE",
+export type Composicao = Array<{ produto: string; unidades: number }>;
+
+const CARD = (unidades = 1): Composicao => [{ produto: "FUTI-CARD", unidades }];
+const COL = (unidades = 1): Composicao => [{ produto: "FUTI-COL", unidades }];
+const ARE = (unidades = 1): Composicao => [{ produto: "FUTI-ARE", unidades }];
+
+const SKUS_PADRAO: Record<string, Composicao> = {
+  // Avulsos
+  "4001292": CARD(), // Futi Card
+  "4001293": COL(), // Futi Collection
+  "4001261": ARE(), // Futi Arena
+
+  // Kits com a composição clara pelo nome
+  "5000003": CARD(2), // Futi Card Dupla
+  "5000004": CARD(), // Futi Card + Decorado Astronauta Menino
+  "5000005": CARD(), // Futi Card + Decorado Astronauta Menina
+  "5000006": CARD(), // Futi Card + Decorado Unicórnio
+  "5000007": CARD(), // Futi Card + Decorado Dinossauro
+  "5000008": CARD(), // Futi Card + Caixa Limone 200g
+  "5000009": CARD(3), // Futi Card Trio
+  "5000010": CARD(6), // Futi Card Caixa 6
+  "5000014": COL(), // Futi Collection + Caixa Laranje 200g
+  "5000015": COL(3), // Futi Collection Trio
+
+  // ⚠️ A confirmar a composição antes de cadastrar:
+  // 5000011 Futi Card Pack Holo, 5000012 Drop Futi Card Caixa Ouro,
+  // 5000013 Futi Collection Live, 5000016 Futi Arena Live,
+  // 5000018 Kit Craque, 5000019 Kit Pai & Filho, 5000020 Kit Mãe & Filhos,
+  // 5000021 Kit Dia das Crianças, 5000022 Kit Cards Completo,
+  // 5000024 Kit Bonecos Collection Completo, 5000025 Kit Completo Neymar Futi,
+  // 5000026 Kit Jogue com os Amigos, 5000027 Kit Compartilhar,
+  // 5000028 Drop Futi Arena Edição Assinada.
 };
 
-export function skuParaProduto(): Record<string, string> {
-  const variavel = (process.env.IOTA_SKUS ?? "").trim();
-  if (!variavel) return SKUS_PADRAO;
-  return Object.fromEntries(
-    variavel
-      .split(",")
-      .map((par) => par.split(":").map((parte) => parte.trim()))
-      .filter(([sku, produto]) => sku && produto)
-  );
+/**
+ * Kits da campanha que ainda não têm a composição confirmada. Pedido com
+ * qualquer um deles fica em espera inteiro (não gera nem os itens conhecidos):
+ * quando o kit for cadastrado acima (ou em IOTA_SKUS), o pedido gera tudo de
+ * uma vez. Se gerasse só a parte conhecida, o pedido ficaria registrado e os
+ * números do kit nunca sairiam.
+ */
+const SKUS_A_CONFIRMAR = [
+  "5000011", "5000012", "5000013", "5000016", "5000018", "5000019", "5000020",
+  "5000021", "5000022", "5000024", "5000025", "5000026", "5000027", "5000028",
+];
+
+/** SKUs a confirmar que ainda não ganharam composição (no código ou na variável). */
+export function skusAConfirmar(): Set<string> {
+  const cadastrados = skuParaProduto();
+  return new Set(SKUS_A_CONFIRMAR.filter((sku) => !(sku in cadastrados)));
+}
+
+/** "FUTI-CARD*6+FUTI-COL" → composição; null se o texto não fizer sentido. */
+function lerComposicao(texto: string): Composicao | null {
+  const partes = texto.split("+").map((parte) => {
+    const [produto, unidades = "1"] = parte.split("*").map((x) => x.trim());
+    return { produto, unidades: Number(unidades) };
+  });
+  return partes.every((p) => p.produto && Number.isInteger(p.unidades) && p.unidades > 0) ? partes : null;
+}
+
+export function skuParaProduto(): Record<string, Composicao> {
+  const extras = (process.env.IOTA_SKUS ?? "")
+    .split(",")
+    .map((par) => {
+      const [sku, composicao] = par.split(":").map((parte) => parte?.trim());
+      return [sku, composicao ? lerComposicao(composicao) : null] as const;
+    })
+    .filter((par): par is readonly [string, Composicao] => !!par[0] && par[1] !== null);
+  return { ...SKUS_PADRAO, ...Object.fromEntries(extras) };
 }
 
 /**

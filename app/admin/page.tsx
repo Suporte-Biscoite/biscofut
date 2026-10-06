@@ -465,7 +465,7 @@ type DiagnosticoIota = {
     situacao: string;
     loja: string | null;
     criadoEm: string;
-    itens: Array<{ sku: string; nome: string | null; quantidade: number; daCampanha: boolean }>;
+    itens: Array<{ sku: string; nome: string | null; quantidade: number; daCampanha: boolean; aConfirmar: boolean }>;
   }>;
 };
 
@@ -579,8 +579,12 @@ function Diagnostico({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
                   <ul className="mt-1">
                     {p.itens.map((i, k) => (
                       <li key={k}>
-                        {i.daCampanha ? "✅" : "▫️"} {i.sku} × {i.quantidade} {i.nome ?? ""}
-                        {i.daCampanha ? "" : " (não é da campanha)"}
+                        {i.daCampanha ? "✅" : i.aConfirmar ? "⏳" : "▫️"} {i.sku} × {i.quantidade} {i.nome ?? ""}
+                        {i.daCampanha
+                          ? ""
+                          : i.aConfirmar
+                            ? " (kit sem composição cadastrada — o pedido inteiro espera)"
+                            : " (não é da campanha)"}
                       </li>
                     ))}
                   </ul>

@@ -1,6 +1,6 @@
 import { query } from "./db";
 import { enviarEmail, urlDoSite } from "./email";
-import { buscarPedidosDoCliente, skuParaProduto, situacaoDoPedido, type ClienteLoja } from "./iota";
+import { buscarPedidosDoCliente, skuParaProduto, skusAConfirmar, situacaoDoPedido, type ClienteLoja } from "./iota";
 
 /**
  * Vigia e diagnóstico da integração com a IOTA/Nexaas.
@@ -29,7 +29,7 @@ export type Diagnostico = {
     situacao: string;
     loja: string | null;
     criadoEm: string;
-    itens: Array<{ sku: string; nome: string | null; quantidade: number; daCampanha: boolean }>;
+    itens: Array<{ sku: string; nome: string | null; quantidade: number; daCampanha: boolean; aConfirmar: boolean }>;
   }>;
 };
 
@@ -49,13 +49,14 @@ export async function diagnosticarCpf(cpf: string): Promise<Diagnostico> {
   }
 
   const skus = skuParaProduto();
+  const aConfirmar = skusAConfirmar();
   const pedidos = cliente.pedidos.map((p) => ({
     id: p.id,
     status: p.status,
     situacao: situacaoDoPedido(p.status),
     loja: p.loja,
     criadoEm: p.criadoEm,
-    itens: p.itens.map((i) => ({ ...i, daCampanha: i.sku in skus })),
+    itens: p.itens.map((i) => ({ ...i, daCampanha: i.sku in skus, aConfirmar: aConfirmar.has(i.sku) })),
   }));
   const comCampanha = pedidos.filter((p) => p.itens.some((i) => i.daCampanha));
 

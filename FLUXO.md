@@ -209,7 +209,7 @@ Participante ──cadastro / login──> /api/meus-numeros ┘──> lib/sinc
 | --- | --- |
 | `IOTA_API_KEY` | `X-API-Key` enviado pela IOTA |
 | `IOTA_API_TOKEN` | `X-API-Token` enviado pela IOTA |
-| `IOTA_SKUS` | opcional — substitui os SKUs padrão do código (Card 4001292, Collection 4001293, Arena 4001261); formato `4001292:FUTI-CARD,4001293:FUTI-COL,4001261:FUTI-ARE` |
+| `IOTA_SKUS` | opcional — acrescenta ou substitui SKUs do código (`SKUS_PADRAO` em `lib/iota.ts`), com a composição do kit: `5000025:FUTI-CARD*6+FUTI-COL*1+FUTI-ARE*1`, separados por vírgula |
 | `IOTA_CAMPAIGN` | opcional, padrão `NEYMARJR` |
 | `IOTA_API_URL` | opcional, padrão `https://api.hub.iotaapp.com.br/provider/biscoite/campaigns` |
 | `IOTA_CPF_TESTE` | CPF de uma compra de teste de produto da campanha, entregue e não cancelada — usado pelo vigia |
@@ -233,6 +233,12 @@ esperam um estado final; status fora da lista vai para o log.
 
 **Números por produto** (`lib/numeroDaSorte.ts`): Futi Card = 1, Futi
 Collection = 6, Futi Arena = 25. Card + Arena na mesma compra = 26 números.
+
+**Kits** (06/10/2026): cada SKU do PDV tem a composição em produtos
+participantes — "Futi Card Dupla" = 2 Cards = 2 números. Kits ainda sem
+composição confirmada (`SKUS_A_CONFIRMAR`) deixam o pedido inteiro em
+espera; quando forem cadastrados, o pedido gera tudo no próximo login.
+Os SKUs também precisam estar no filtro da campanha NEYMARJR na IOTA.
 
 **Vigia e diagnóstico** (`lib/monitor.ts`): a cada 15 minutos o cron da
 Vercel (`vercel.json`) consulta a IOTA com `IOTA_CPF_TESTE` e manda e-mail

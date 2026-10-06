@@ -1,6 +1,13 @@
 import { campaign } from "./campaign";
 import { query } from "./db";
-import { buscarPedidosDoCliente, situacaoDoPedido, skuParaProduto, type PedidoLoja } from "./iota";
+import {
+  buscarPedidosDoCliente,
+  situacaoDoPedido,
+  skuParaProduto,
+  skusAConfirmar,
+  type Composicao,
+  type PedidoLoja,
+} from "./iota";
 import { calcularNumeros, produtosElegiveis, type ItemCompra } from "./numeroDaSorte";
 import { transactionsAllowed } from "./promoStatus";
 import { anularPedido, emitirNumerosDoPedido } from "./store";
@@ -39,9 +46,15 @@ function dentroDaVigencia(pedido: PedidoLoja): boolean {
 
 const skusValidos = new Set(produtosElegiveis.map((p) => p.sku));
 
-function itensParticipantes(pedido: PedidoLoja, skus: Record<string, string>): ItemCompra[] {
+/** Cada item do PDV vira as unidades de produto participante que ele contém (kits). */
+function itensParticipantes(pedido: PedidoLoja, skus: Record<string, Composicao>): ItemCompra[] {
   return pedido.itens
-    .map((item) => ({ sku: skus[item.sku] ?? "", quantidade: item.quantidade }))
+    .flatMap((item) =>
+      (skus[item.sku] ?? []).map(({ produto, unidades }) => ({
+        sku: produto,
+        quantidade: item.quantidade * unidades,
+      }))
+    )
     .filter((item) => skusValidos.has(item.sku) && item.quantidade > 0);
 }
 
@@ -100,6 +113,7 @@ export async function sincronizarPedidos(
   }
 
   const skus = skuParaProduto();
+  const aConfirmar = skusAConfirmar();
   let pedidosNovos = 0;
   let numerosNovos = 0;
   let numerosAnulados = 0;
@@ -116,6 +130,13 @@ export async function sincronizarPedidos(
       console.warn(`[sincronizacao] pedido ${pedido.id} com status desconhecido "${pedido.status}" — sem números até ser classificado em lib/iota.ts`);
     }
     if (situacao === "pendente" || situacao === "desconhecido") continue;
+
+    // Kit sem composição confirmada: o pedido espera inteiro (ver lib/iota.ts).
+    const pendente = pedido.itens.find((item) => aConfirmar.has(item.sku));
+    if (pendente) {
+      console.warn(`[sincronizacao] pedido ${pedido.id} aguardando composição do kit ${pendente.sku}`);
+      continue;
+    }
 
     const solicitados = calcularNumeros(itensParticipantes(pedido, skus));
     if (solicitados === 0) continue;
