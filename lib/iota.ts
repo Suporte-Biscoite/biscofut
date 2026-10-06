@@ -112,25 +112,23 @@ export function skuParaProduto(): Record<string, Composicao> {
  * O que fazer com o pedido conforme o status — lista oficial enviada pela
  * IOTA em 30/09/2026.
  *
- * - valido: venda finalizada, gera números. A venda de loja já chega como
- *   "delivered"; no e-commerce, esperar a entrega evita dar número para
- *   compra que ainda pode ser cancelada.
+ * - valido: compra efetivada, gera números. A partir da nota fiscal emitida
+ *   (nfe_issued) e em todas as etapas seguintes (separação, envio, entrega).
+ *   Até 06/10/2026 só "delivered" gerava — e os pedidos do e-commerce e das
+ *   franquias, que levam dias até a entrega, ficavam sem número. Se o pedido
+ *   for cancelado ou devolvido depois, os números são anulados.
  * - cancelado: anula os números que o pedido tiver gerado.
- * - pendente: ainda em andamento (faturado, em separação, em rota,
- *   cancelamento ou devolução pendente…). Não gera nem anula; o pedido é
- *   reavaliado a cada sincronização até chegar num estado final.
- *   "partially_cancelled" fica aqui porque a API não diz quais itens saíram.
+ * - pendente: antes de a compra se efetivar (pedido incluído, emitindo NF-e,
+ *   pré-pedido, aguardando estoque) ou com problema / cancelamento ou
+ *   devolução em andamento. Não gera nem anula; o pedido é reavaliado a cada
+ *   sincronização. "partially_cancelled" fica aqui porque a API não diz
+ *   quais itens saíram.
  * - desconhecido: fora da lista oficial — tratado como pendente, com aviso no
  *   log para ser classificado aqui.
  */
-const STATUS_VALIDOS = new Set(["delivered", "delivered_waiting_stock", "rejected_return"]);
-const STATUS_CANCELADOS = new Set(["cancelled", "full_return", "send_returned", "accepted_return"]);
-const STATUS_PENDENTES = new Set([
-  "new",
-  "processing_nfe",
+const STATUS_VALIDOS = new Set([
   "nfe_issued",
   "waiting_picking",
-  "pre_order",
   "picked",
   "packed",
   "pack_label_generated",
@@ -138,6 +136,15 @@ const STATUS_PENDENTES = new Set([
   "transporting",
   "delivery_route",
   "waiting_withdrawal",
+  "delivered",
+  "delivered_waiting_stock",
+  "rejected_return",
+]);
+const STATUS_CANCELADOS = new Set(["cancelled", "full_return", "send_returned", "accepted_return"]);
+const STATUS_PENDENTES = new Set([
+  "new",
+  "processing_nfe",
+  "pre_order",
   "waiting_stock",
   "canceling_nfe",
   "pending_cancel",

@@ -446,7 +446,7 @@ function BuscarCpf({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
             </ul>
           </div>
           {ficha.cadastradoEm && (
-            <LancamentoManual cpf={ficha.cpf} onFeito={() => buscar()} onSessaoExpirada={onSessaoExpirada} />
+            <LancamentoManual key={ficha.cpf} cpf={ficha.cpf} onFeito={() => buscar()} onSessaoExpirada={onSessaoExpirada} />
           )}
           <div>
             <h3 className="text-sm font-black uppercase tracking-label">
