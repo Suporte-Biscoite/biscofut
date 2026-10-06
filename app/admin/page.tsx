@@ -41,7 +41,7 @@ type Ficha = {
   pedidos: Array<{ id: string; loja: string | null; compradoEm: string | null; status: string | null; numeros: number; cancelado: boolean }>;
 };
 
-type Aba = "apuracao" | "numero" | "cpf" | "diagnostico";
+type Aba = "apuracao" | "numero" | "cpf" | "diagnostico" | "relatorio";
 
 async function chamar<T>(url: string, init?: RequestInit): Promise<{ ok: boolean; mensagem?: string } & T> {
   try {
@@ -106,6 +106,7 @@ export default function Admin() {
                   ["numero", "Buscar número"],
                   ["cpf", "Buscar CPF"],
                   ["diagnostico", "Diagnóstico"],
+                  ["relatorio", "Relatório"],
                 ] as const
               ).map(([valor, rotulo]) => (
                 <button
@@ -125,6 +126,7 @@ export default function Admin() {
             {aba === "numero" && <BuscarNumero onSessaoExpirada={() => setLogado(false)} />}
             {aba === "cpf" && <BuscarCpf onSessaoExpirada={() => setLogado(false)} />}
             {aba === "diagnostico" && <Diagnostico onSessaoExpirada={expirou} />}
+            {aba === "relatorio" && <Relatorio onSessaoExpirada={expirou} />}
           </>
         )}
       </main>
@@ -594,6 +596,186 @@ function Diagnostico({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
           )}
         </div>
       )}
+    </section>
+  );
+}
+
+type ResumoRelatorio = {
+  cadastrados: number;
+  comNumeros: number;
+  numerosValidos: number;
+  numerosAnulados: number;
+  pedidos: number;
+  pedidosCancelados: number;
+  nuncaAtualizados: number;
+};
+
+type LinhaRelatorio = {
+  cpf: string;
+  nome: string | null;
+  email: string | null;
+  telefone: string | null;
+  cidade: string | null;
+  uf: string | null;
+  cadastradoEm: string | null;
+  sincronizadoEm: string | null;
+  pedidos: number;
+  numeros: number;
+};
+
+type Lote = { consultados: number; comNumerosNovos: number; numerosNovos: number; numerosAnulados: number; falhas: number; restantes: number };
+
+function Relatorio({ onSessaoExpirada }: { onSessaoExpirada: () => void }) {
+  const [resumo, setResumo] = useState<ResumoRelatorio | null>(null);
+  const [linhas, setLinhas] = useState<LinhaRelatorio[]>([]);
+  const [filtro, setFiltro] = useState<"todos" | "sem-numeros">("todos");
+  const [atualizando, setAtualizando] = useState(false);
+  const [progresso, setProgresso] = useState("");
+  const [erro, setErro] = useState("");
+
+  const carregar = useCallback(async () => {
+    const r = await chamar<{ resumo: ResumoRelatorio; participantes: LinhaRelatorio[] }>("/api/admin/relatorio");
+    if (r.ok) {
+      setResumo(r.resumo);
+      setLinhas(r.participantes);
+    } else if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
+    else setErro(r.mensagem ?? "Não foi possível carregar o relatório.");
+  }, [onSessaoExpirada]);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  /** Vai em lotes de 150 até não sobrar ninguém, mostrando o andamento. */
+  async function atualizarTodos() {
+    setAtualizando(true);
+    setErro("");
+    const desde = new Date().toISOString();
+    let total = { consultados: 0, numerosNovos: 0, comNumerosNovos: 0, numerosAnulados: 0, falhas: 0 };
+    for (let volta = 0; volta < 100; volta++) {
+      const r = await chamar<{ lote: Lote }>("/api/admin/relatorio", { method: "POST", body: JSON.stringify({ desde }) });
+      if (!r.ok) {
+        if (r.mensagem?.startsWith("Sessão")) onSessaoExpirada();
+        else setErro(r.mensagem ?? "A atualização parou no meio. Clique de novo para continuar.");
+        break;
+      }
+      total = {
+        consultados: total.consultados + r.lote.consultados,
+        numerosNovos: total.numerosNovos + r.lote.numerosNovos,
+        comNumerosNovos: total.comNumerosNovos + r.lote.comNumerosNovos,
+        numerosAnulados: total.numerosAnulados + r.lote.numerosAnulados,
+        falhas: total.falhas + r.lote.falhas,
+      };
+      setProgresso(
+        `${total.consultados} consultados · ${total.numerosNovos} números novos para ${total.comNumerosNovos} pessoas` +
+          (total.numerosAnulados ? ` · ${total.numerosAnulados} anulados por cancelamento` : "") +
+          (total.falhas ? ` · ${total.falhas} sem resposta da IOTA` : "") +
+          (r.lote.restantes > 0 ? ` · faltam ${r.lote.restantes}…` : " · concluído")
+      );
+      if (r.lote.restantes === 0 || r.lote.consultados === 0) break;
+    }
+    setAtualizando(false);
+    carregar();
+  }
+
+  const visiveis = filtro === "sem-numeros" ? linhas.filter((l) => l.numeros === 0) : linhas;
+
+  return (
+    <section className="mt-8 space-y-8">
+      {resumo && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(
+            [
+              ["Cadastrados", resumo.cadastrados],
+              ["Com números", resumo.comNumeros],
+              ["Números válidos", resumo.numerosValidos],
+              ["Pedidos", resumo.pedidos],
+              ["Sem números", resumo.cadastrados - resumo.comNumeros],
+              ["Nunca atualizados", resumo.nuncaAtualizados],
+              ["Pedidos cancelados", resumo.pedidosCancelados],
+              ["Números anulados", resumo.numerosAnulados],
+            ] as const
+          ).map(([rotulo, valor]) => (
+            <div key={rotulo} className="card p-4">
+              <p className="text-[10px] font-black uppercase tracking-label text-steel">{rotulo}</p>
+              <p className="mt-1 text-2xl font-black text-navy">{valor.toLocaleString("pt-BR")}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="card space-y-4 p-6 sm:p-8">
+        <p className="text-sm leading-relaxed text-ink/70">
+          Busca na IOTA as compras de <strong>todos os cadastrados</strong>, mesmo de quem não voltou ao
+          site. O vigia já faz isso aos poucos a cada 15 minutos; use o botão para atualizar todo mundo
+          agora. Quem comprou e não se cadastrou não aparece aqui — só num relatório de vendas da Nexaas.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={atualizarTodos} disabled={atualizando} className="btn-primary">
+            {atualizando ? "Atualizando…" : "Atualizar compras de todos"}
+          </button>
+          <a href="/api/admin/relatorio/csv" className="btn-secondary">
+            Baixar planilha (CSV)
+          </a>
+        </div>
+        {progresso && (
+          <p role="status" className="rounded-xl bg-sky/15 px-4 py-3 text-sm text-ink/80">
+            {progresso}
+          </p>
+        )}
+      </div>
+
+      {erro && <Erro>{erro}</Erro>}
+
+      <div className="card overflow-x-auto p-6 sm:p-8">
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-xs">
+          {(
+            [
+              ["todos", `Todos (${linhas.length})`],
+              ["sem-numeros", `Sem números (${linhas.filter((l) => l.numeros === 0).length})`],
+            ] as const
+          ).map(([valor, rotulo]) => (
+            <button
+              key={valor}
+              type="button"
+              onClick={() => setFiltro(valor)}
+              aria-pressed={filtro === valor}
+              className={`rounded-full px-3 py-1.5 font-black uppercase tracking-label ${
+                filtro === valor ? "bg-navy text-white" : "text-ink/55 hover:text-navy"
+              }`}
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+        <table className="w-full min-w-[40rem] text-left text-sm">
+          <thead className="text-[10px] font-black uppercase tracking-label text-steel">
+            <tr>
+              <th className="py-2 pr-3">Nome</th>
+              <th className="py-2 pr-3">CPF</th>
+              <th className="py-2 pr-3">Cidade</th>
+              <th className="py-2 pr-3 text-right">Pedidos</th>
+              <th className="py-2 pr-3 text-right">Números</th>
+              <th className="py-2">Atualizado</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line text-ink/80">
+            {visiveis.slice(0, 500).map((l) => (
+              <tr key={l.cpf}>
+                <td className="py-2 pr-3">{l.nome ?? "—"}</td>
+                <td className="py-2 pr-3 font-mono text-xs">{formatCPF(l.cpf)}</td>
+                <td className="py-2 pr-3">{l.cidade ? `${l.cidade}/${l.uf}` : "—"}</td>
+                <td className="py-2 pr-3 text-right">{l.pedidos}</td>
+                <td className={`py-2 pr-3 text-right font-black ${l.numeros === 0 ? "text-alert" : "text-navy"}`}>{l.numeros}</td>
+                <td className="py-2 text-xs text-ink/55">{data(l.sincronizadoEm)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {visiveis.length > 500 && (
+          <p className="mt-3 text-xs text-ink/55">Mostrando 500 de {visiveis.length}. A planilha tem todos.</p>
+        )}
+      </div>
     </section>
   );
 }
