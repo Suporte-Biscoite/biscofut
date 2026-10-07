@@ -885,8 +885,8 @@ function LancamentoManual({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           id="man-pedido"
-          label="Nº do PEDIDO Nexaas"
-          hint='Topo do cupom: "PEDIDO: 4808933" (7 dígitos). Não é o número da NFC-e.'
+          label="Nº do PEDIDO Nexaas (se tiver)"
+          hint='"PEDIDO: 4810786" — no topo ou no rodapé do cupom. Se não tiver, deixe em branco e use a chave da NFC-e.'
         >
           <Input id="man-pedido" inputMode="numeric" value={pedido} hasHint onChange={(e) => setPedido(e.target.value)} placeholder="4808933" />
         </Field>

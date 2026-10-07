@@ -39,16 +39,8 @@ export type ResultadoLancamento =
 const skusValidos = new Set(produtosElegiveis.map((p) => p.sku));
 
 export async function lancarCompraManual(d: DadosLancamento): Promise<ResultadoLancamento> {
-  const pedido = d.pedido.replace(/\D/g, "");
+  const pedidoNexaas = d.pedido.replace(/\D/g, "");
   const operador = d.operador.trim();
-
-  // O número do pedido da Nexaas tem 7 dígitos ou mais (ex.: 4808933) e sai no
-  // topo do cupom ("PEDIDO: …"). Não confundir com o número da NFC-e, mais
-  // curto: se o pedido for lançado com o número errado e depois chegar pela
-  // IOTA com o número certo, os números sairiam duas vezes.
-  if (pedido.length < 7) {
-    return { ok: false, mensagem: "Use o número do PEDIDO da Nexaas (7 dígitos ou mais, no topo do cupom: \"PEDIDO: …\"), não o número da NFC-e." };
-  }
   if (operador.length < 2) return { ok: false, mensagem: "Informe o seu nome (quem está lançando)." };
 
   const { inicio, fim } = campaign.vigencia;
@@ -57,16 +49,37 @@ export async function lancarCompraManual(d: DadosLancamento): Promise<ResultadoL
     return { ok: false, mensagem: "Data da compra fora do período da promoção." };
   }
 
-  // Chave da NFC-e (ou o link do QR Code do cupom): opcional, mas se vier
-  // tem que ser válida, da Biscoitê e do mesmo mês da compra.
+  // Chave da NFC-e (ou o link do QR Code): válida e do mesmo mês da compra.
   let chave: string | null = null;
   if ((d.chaveNfce ?? "").trim()) {
     const validacao = validarChave(d.chaveNfce!, d.data);
     if (!validacao.ok) return { ok: false, mensagem: validacao.mensagem };
-    if (validacao.dados.numero === String(Number(pedido))) {
-      return { ok: false, mensagem: `${pedido} é o número da NFC-e, não do pedido. Use o número do PEDIDO da Nexaas (topo do cupom).` };
+    if (pedidoNexaas && validacao.dados.numero === String(Number(pedidoNexaas))) {
+      return {
+        ok: false,
+        mensagem: `${pedidoNexaas} é o número da NFC-e, não do pedido. Deixe o campo do pedido em branco ou use o número do PEDIDO Nexaas.`,
+      };
     }
     chave = validacao.dados.chave;
+  }
+
+  // Referência da compra: o número do PEDIDO Nexaas (7+ dígitos, topo ou
+  // rodapé do cupom) — o mesmo que chega pela IOTA, então não duplica se o pedido
+  // aparecer depois. Cupom sem pedido (franquia com outro sistema): a chave
+  // da NFC-e vira a referência ("nfce:<chave>"), única por nota.
+  let pedido: string;
+  if (pedidoNexaas) {
+    if (pedidoNexaas.length < 7) {
+      return {
+        ok: false,
+        mensagem: "O número do PEDIDO Nexaas tem 7 dígitos ou mais (topo ou rodapé do cupom). Se o cupom não tem pedido, deixe em branco e informe a chave da NFC-e.",
+      };
+    }
+    pedido = pedidoNexaas;
+  } else if (chave) {
+    pedido = `nfce:${chave}`;
+  } else {
+    return { ok: false, mensagem: "Informe o número do PEDIDO Nexaas ou, se o cupom não tiver, a chave da NFC-e / link do QR Code." };
   }
 
   const [participante] = await query<{ cadastrado: boolean }>(
