@@ -896,7 +896,7 @@ function LancamentoManual({
         <Field
           id="man-chave"
           label="Chave da NFC-e ou link do QR Code"
-          hint="Confere se a nota é da Biscoitê e do mês da compra."
+          hint="Confere se a chave é válida e do mês da compra. Confira no cupom que a loja é Biscoitê (matriz ou franquia)."
         >
           <Input
             id="man-chave"

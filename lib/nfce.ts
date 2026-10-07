@@ -10,8 +10,6 @@
  * link ou a chave dá no mesmo.
  */
 
-/** Raiz do CNPJ da Biscoitê Comércio de Alimentos e Presentes Ltda. */
-const RAIZ_CNPJ_BISCOITE = "39267229";
 
 /** Os 44 dígitos da chave, a partir da chave digitada ou do link do QR Code. */
 export function extrairChave(texto: string): string | null {
@@ -36,7 +34,7 @@ function digitoVerificador(primeiros43: string): number {
 
 export type ChaveNfce = { chave: string; cnpj: string; anoMes: string; numero: string };
 
-/** Valida a chave e confere se a nota é da Biscoitê. Devolve o erro em português. */
+/** Valida a chave (dígito verificador e mês). Devolve o erro em português. */
 export function validarChave(texto: string, dataCompra?: string): { ok: true; dados: ChaveNfce } | { ok: false; mensagem: string } {
   const chave = extrairChave(texto);
   if (!chave) return { ok: false, mensagem: "Não achei a chave da NFC-e (44 dígitos) no que foi colado." };
@@ -44,9 +42,8 @@ export function validarChave(texto: string, dataCompra?: string): { ok: true; da
     return { ok: false, mensagem: "Chave da NFC-e inválida (dígito verificador não confere). Confira se não faltou ou sobrou número." };
   }
   const cnpj = chave.slice(6, 20);
-  if (!cnpj.startsWith(RAIZ_CNPJ_BISCOITE)) {
-    return { ok: false, mensagem: `Esta nota não é da Biscoitê (CNPJ ${cnpj}).` };
-  }
+  // Não confere o CNPJ: as franquias emitem a nota com CNPJ próprio. Quem
+  // lança confere no cupom que a loja é Biscoitê.
   const anoMes = `20${chave.slice(2, 4)}-${chave.slice(4, 6)}`;
   if (dataCompra && !dataCompra.startsWith(anoMes)) {
     return { ok: false, mensagem: `A nota é de ${chave.slice(4, 6)}/20${chave.slice(2, 4)}, mas a data da compra informada é outra.` };
