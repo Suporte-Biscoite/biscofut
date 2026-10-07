@@ -6,7 +6,7 @@
  */
 export const CATALOGO: Array<{ sku: string; nome: string }> = [
   { sku: "4001292", nome: "Futi Card" },
-  { sku: "4001293", nome: "Futi Collection" },
+  { sku: "4001293", nome: "Futi Player (antigo Futi Collection)" },
   { sku: "4001261", nome: "Futi Arena" },
   { sku: "5000003", nome: "Futi Card Dupla" },
   { sku: "5000004", nome: "Futi Card + Decorado Astronauta Menino" },

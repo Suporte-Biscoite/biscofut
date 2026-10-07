@@ -49,7 +49,7 @@ export const produtosElegiveis: ProdutoElegivel[] = [
   {
     sku: "FUTI-COL",
     slug: "futi-collection",
-    nome: "Futi Collection",
+    nome: "Futi Player",
     descricao:
       "Blind box com 1 de 6 bonequinhos colecionáveis surpresa, acompanhada de biscoitos temáticos e bolinha.",
     numerosPorUnidade: 6,
